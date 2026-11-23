@@ -1,0 +1,16 @@
+{
+  "name": "Blechbearbeitungsmaschine Simulator",
+  "short_name": "Blech-Sim",
+  "description": "Simulation der IHK-Prüfungsanlage W26 3090 B1/B2 mit FB1 (NW1 bis NW5), Bedienteil, Platine und Log.",
+  "lang": "de",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#121615",
+  "theme_color": "#1b201e",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
