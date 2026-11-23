@@ -1,14 +1,13 @@
 # Blechbearbeitungsmaschine Simulator
 
-Offline-fähige PWA, die die Anlage aus der IHK-Abschlussprüfung Teil 2, Winter 2026/27 (W26 3090 B1/B2, Elektroniker/-in für Betriebstechnik) simuliert.
+Offline-fähige PWA mit 3D-Modell, die die Anlage aus der IHK-Abschlussprüfung Teil 2, Winter 2026/27 (W26 3090 B1/B2, Elektroniker/-in für Betriebstechnik) simuliert und auf die Funktionskontrolle vorbereitet.
 
-- Bedienteil: S1, S2, S3 (Tippbetrieb), S4, Leuchtmelder P1, P2
-- Prozess-Simulationsplatine: Sensoren B10, B11, B13 (automatisch oder von Hand), Anzeigen P10 bis P12
-- Leistungsteil: Motorschutzschalter F3 (Störung auslösen), Wendeschütze Q1/Q2, Motor M1, Ventil M2
-- SPS-Programm FB1 live (Netzwerk 1 bis 5), genau nach dem TIA-FUP-Programm
-- Jedes Bauteil antippen für Funktion, Adresse und Zustand
-- Offenes Log mit jeder Bedienung und jeder Zustandsänderung inklusive auslösendem Netzwerk
-- Geführte Funktionsprüfung in 8 Schritten
+- **3D-Modell** (three.js): Bedienteil, Haspel mit Motor M1, Klappe mit Ventil M2, Sensoren B10/B11/B13, Container und Schaltschrank mit F3, Q1/Q2, SPS K1 (E/A-LEDs) und Prozess-Simulationsplatine. Drehen, zoomen, jedes Bauteil antippen.
+- **Tutorial in 16 Schritten**: führt durch die komplette Funktionsbeschreibung (Grundstellung, S1, Tippbetrieb, Klappe, Abhaspeln, Verriegelung, Störung F3, Quittieren, Ausschalten), erklärt nach jedem Schritt, welches Netzwerk reagiert hat, und kann jeden Schritt vorführen.
+- **Bedienleiste** mit S1, S2, S3 (Tippbetrieb), S4, F3 und den Leuchtmeldern P1, P2, P10 bis P12. Sensoren automatisch oder von Hand wie auf der Prüfungsplatine.
+- **SPS-Programm FB1 live** (Netzwerk 1 bis 5), genau nach dem TIA-FUP-Programm.
+- **Offenes Log** mit jeder Bedienung und jeder Zustandsänderung inklusive auslösendem Netzwerk und Grund.
+- **Zuordnungsliste**, **Funktionstest** (10 Punkte aus der Musterlösung) und **Was die IHK verlangt** (Ablauf, Prüfung nach DIN VDE 0100-600, Fachgespräch).
 
 ## Starten
 
@@ -16,6 +15,10 @@ GitHub Pages: Settings → Pages → Source „Deploy from a branch“, Branch `
 Danach die Seite auf dem Handy öffnen und „Zum Startbildschirm hinzufügen“ wählen.
 
 Lokal: `python3 -m http.server` im Ordner starten und `http://localhost:8000` öffnen.
+
+## Technik
+
+`index.html` enthält die ganze App. `vendor/` enthält three.js r128 und OrbitControls, damit die App auch offline läuft. `sw.js` cached alles beim ersten Aufruf.
 
 ## Unterlagen
 

@@ -13,712 +13,1001 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 </head>
 <body>
-<title>Blechbearbeitungsmaschine Simulator</title>
+<title>Blechbearbeitungsmaschine 3D</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: Schaltschrank-Look. Links die Anlage (Prozessbild, Bedienteil, Platine, Leistungsteil, Netzwerke),
-   rechts bzw. auf dem Handy unten ein dauerhaft offenes Log. */
+/* Layout: links die 3D-Anlage mit Bedienleiste, rechts Tutorial, Log und Unterlagen. Auf dem Handy untereinander. */
 :root{
-  --bg:#e4e7e1; --panel:#f5f6f2; --panel2:#eceee8; --ink:#1b211f; --muted:#5a645f; --line:#c6cbc3;
-  --accent:#1f5fa8; --accent-ink:#ffffff;
+  --bg:#e3e6e0; --panel:#f6f7f3; --panel2:#eceee8; --ink:#1b211f; --muted:#59635e; --line:#c5cac2;
+  --accent:#e0661b; --accent-ink:#ffffff; --blue:#1f5fa8; --blue-ink:#fff;
   --on:#22b24a; --on-glow:rgba(34,178,74,.45); --fault:#d9342b; --fault-glow:rgba(217,52,43,.45);
-  --white-lamp:#fff4c2; --white-glow:rgba(255,226,120,.55); --off:#9aa29d; --off-dark:#6f7772;
-  --steel:#7d8a93; --steel-dark:#4d5961; --warn:#e3a21a; --chip-true:#d8f1de; --chip-false:#eceee8;
-  --chip-true-ink:#11642b; --chip-false-ink:#6a736e; --btn-black:#22272a; --btn-face:#30363a;
+  --off:#9aa29d; --off-dark:#6f7772; --warn:#c98a00; --white-lamp:#fff4c2;
+  --chip-true:#d6f0dc; --chip-false:#eceee8; --chip-true-ink:#11642b; --chip-false-ink:#69726d;
+  --scene:#cfd5d0; --tut:#fff6ee; --tut-line:#f0b98f;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --logw:380px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121615; --panel:#1b201e; --panel2:#222826; --ink:#e3e8e4; --muted:#97a29c; --line:#323a37;
-  --accent:#6aa5f0; --accent-ink:#0d1420; --white-lamp:#fff1b0; --off:#4d5551; --off-dark:#3a413e;
-  --steel:#8d9aa3; --steel-dark:#5f6c74; --chip-true:#163d23; --chip-false:#262c2a; --chip-true-ink:#8be3a3;
-  --chip-false-ink:#8a948f; --btn-black:#0d0f10; --btn-face:#2a3034; color-scheme:dark}}
+  --bg:#121615; --panel:#1b201e; --panel2:#232927; --ink:#e3e8e4; --muted:#98a39d; --line:#333b38;
+  --accent:#f08a45; --accent-ink:#1a0d04; --blue:#6aa5f0; --blue-ink:#0b1420; --off:#4d5551; --off-dark:#3a413e;
+  --chip-true:#163d23; --chip-false:#262c2a; --chip-true-ink:#8be3a3; --chip-false-ink:#8a948f;
+  --scene:#26302c; --tut:#2a211a; --tut-line:#7a4a28; --warn:#e8b23a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121615; --panel:#1b201e; --panel2:#222826; --ink:#e3e8e4; --muted:#97a29c; --line:#323a37;
-  --accent:#6aa5f0; --accent-ink:#0d1420; --white-lamp:#fff1b0; --off:#4d5551; --off-dark:#3a413e;
-  --steel:#8d9aa3; --steel-dark:#5f6c74; --chip-true:#163d23; --chip-false:#262c2a; --chip-true-ink:#8be3a3;
-  --chip-false-ink:#8a948f; --btn-black:#0d0f10; --btn-face:#2a3034; color-scheme:dark}
+  --bg:#121615; --panel:#1b201e; --panel2:#232927; --ink:#e3e8e4; --muted:#98a39d; --line:#333b38;
+  --accent:#f08a45; --accent-ink:#1a0d04; --blue:#6aa5f0; --blue-ink:#0b1420; --off:#4d5551; --off-dark:#3a413e;
+  --chip-true:#163d23; --chip-false:#262c2a; --chip-true-ink:#8be3a3; --chip-false-ink:#8a948f;
+  --scene:#26302c; --tut:#2a211a; --tut-line:#7a4a28; --warn:#e8b23a; color-scheme:dark}
 
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--panel)}
 button{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .mono{font-family:var(--f-mono)}
 
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line);
-  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.top-row{display:flex;align-items:center;gap:8px}
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-row{display:flex;align-items:center;gap:8px;max-width:1400px;margin:0 auto}
 .brand{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
-.brand b{font-family:var(--f-display);font-weight:700;font-size:clamp(16px,4.6vw,21px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em;text-transform:uppercase;line-height:1.05}
-.brand span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.status{flex:0 1 auto;min-width:0;white-space:nowrap}
-@media (max-width:520px){.brand b{text-transform:none;letter-spacing:0;font-size:18px}.status{font-size:12px;padding:5px 8px}.tbtn.rs{padding:6px 8px}}
-.status{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-weight:600;font-size:13px}
-.status i{width:10px;height:10px;border-radius:50%;background:var(--off)}
+.brand b{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.03em;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-weight:600;font-size:12.5px;white-space:nowrap;min-width:0}
+.status i{width:9px;height:9px;border-radius:50%;background:var(--off);flex:none}
 .status[data-s="run"] i{background:var(--on);box-shadow:0 0 8px var(--on-glow)}
 .status[data-s="fault"] i{background:var(--fault);box-shadow:0 0 8px var(--fault-glow)}
-.status[data-s="ready"] i{background:var(--accent)}
-.tbtn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:500;cursor:pointer}
-.tbtn:active{transform:translateY(1px)}
+.status[data-s="ready"] i{background:var(--blue)}
+.tbtn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.tbtn.acc{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+@media (max-width:560px){.status span{max-width:34vw;overflow:hidden;text-overflow:ellipsis}.brand span{display:none}}
 
-.layout{display:grid;grid-template-columns:1fr;gap:16px;max-width:1240px;margin:0 auto;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 42vh}
-@media (min-width:960px){.layout{grid-template-columns:minmax(0,1fr) var(--logw);padding-block:16px 24px}}
-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.app{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;max-width:1400px;margin:0 auto;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px 28px}
+@media (min-width:1000px){.app{grid-template-columns:minmax(0,1.55fr) minmax(360px,1fr);align-items:start}
+  .left{position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px)}}
+.left,.right{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:999px){.left,.right{display:contents}.stage{order:1;position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hh,52px));z-index:5;height:36vh;min-height:240px;box-shadow:0 6px 14px rgba(0,0,0,.12)}#tut{order:2}.bar{order:3}.logcard{order:4}.tabcard{order:5}}
 
-.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
-.sec h2{margin:0 0 2px;font-family:var(--f-display);font-weight:600;font-size:18px;letter-spacing:.06em;text-transform:uppercase;text-wrap:balance}
-.sec .sub{margin:0 0 12px;color:var(--muted);font-size:12.5px}
-.sec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+/* 3D-Bühne */
+.stage{position:relative;height:clamp(290px,46vh,560px);border-radius:12px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:none}
+@media (min-width:1000px){.stage{height:min(64vh,660px)}}
+.stage canvas{display:block;width:100%;height:100%}
+.views{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.views button{pointer-events:auto;white-space:nowrap;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.views .sp{flex:1}
+.views button{font-size:12px}@media (max-width:480px){.views{gap:4px}.views button{padding:3px 8px;font-size:11px}.hint3d{display:none}}
+.hint3d{position:absolute;left:8px;bottom:8px;right:8px;font-size:11.5px;color:var(--muted);pointer-events:none;text-shadow:0 1px 0 var(--scene)}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:var(--muted)}
 
-/* Prozessbild */
-.proc{width:100%;height:auto;display:block;max-width:100%;border-radius:8px;background:var(--panel2)}
-.proc .hit{cursor:pointer}
-.proc text{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
-.proc .lbl{font-family:var(--f-display);font-size:12px;font-weight:600;fill:var(--ink);letter-spacing:.04em}
-
-/* Bauteile */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.comp{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);text-align:center;min-width:0}
-.comp .bmk{font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em}
-.comp .nm{font-size:12px;color:var(--muted);line-height:1.25;min-height:2.5em}
-.comp .addr{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.comp .val{font-family:var(--f-mono);font-size:12px;font-weight:500;padding:1px 7px;border-radius:5px;background:var(--chip-false);color:var(--chip-false-ink)}
-.comp .val.t{background:var(--chip-true);color:var(--chip-true-ink)}
-.info{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-family:var(--f-display);font-weight:700;font-size:14px;cursor:pointer;line-height:1;display:grid;place-items:center;color:var(--accent)}
-
-/* Drucktaster */
-.pb{width:74px;height:74px;border-radius:50%;border:5px solid #8f979b;background:radial-gradient(circle at 40% 35%,#4a5257,var(--btn-black) 70%);
-  box-shadow:0 4px 0 #555d61,0 6px 10px rgba(0,0,0,.25);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
-  color:#e9ecef;font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.05em;transition:transform .05s}
-.pb.pressed{transform:translateY(4px);box-shadow:0 0 0 #555d61,0 2px 4px rgba(0,0,0,.25)}
-.pb.green{background:radial-gradient(circle at 40% 35%,#5fd37b,#1d8a3b 70%)}
+/* Bedienleiste */
+.bar{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.ctrls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cb{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
+.cb b{font-family:var(--f-display);font-size:15px;letter-spacing:.04em;line-height:1}
+.cb small{font-size:10.5px;color:var(--muted);line-height:1.15}
+.pb{width:54px;height:54px;border-radius:50%;border:4px solid #8f979b;background:radial-gradient(circle at 40% 35%,#4a5257,#1d2124 70%);
+  box-shadow:0 3px 0 #555d61,0 5px 8px rgba(0,0,0,.25);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:#eef1f3;font-family:var(--f-display);font-weight:700;font-size:12px}
+.pb.pressed{transform:translateY(3px);box-shadow:0 0 0 #555d61,0 2px 4px rgba(0,0,0,.25)}
+.pb.green{background:radial-gradient(circle at 40% 35%,#64d47f,#1d8a3b 70%)}
 .pb.blue{background:radial-gradient(circle at 40% 35%,#6da3e6,#1b4f93 70%)}
-/* Wahlschalter */
-.sel{width:74px;height:74px;border-radius:50%;border:5px solid #8f979b;background:var(--btn-black);position:relative;cursor:pointer}
-.sel::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:56px;margin:-28px 0 0 -7px;border-radius:7px;background:#d8dcde;transform:rotate(-45deg);transition:transform .15s}
+.sel{width:54px;height:54px;border-radius:50%;border:4px solid #8f979b;background:#1d2124;position:relative;cursor:pointer}
+.sel::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:40px;margin:-20px 0 0 -5.5px;border-radius:6px;background:#d8dcde;transform:rotate(-45deg);transition:transform .15s}
 .sel.on::after{transform:rotate(45deg)}
-.sel-l{display:flex;justify-content:space-between;width:96px;font-family:var(--f-display);font-weight:600;font-size:12px;color:var(--muted)}
-/* Leuchtmelder */
-.lamp{width:58px;height:58px;border-radius:50%;border:5px solid #8f979b;background:radial-gradient(circle at 40% 35%,var(--off),var(--off-dark) 75%);cursor:pointer;transition:box-shadow .15s,background .15s}
-.lamp.white.lit{background:radial-gradient(circle at 40% 35%,#fffef5,var(--white-lamp) 70%);box-shadow:0 0 18px 4px var(--white-glow)}
-.lamp.red.lit{background:radial-gradient(circle at 40% 35%,#ff8c82,var(--fault) 70%);box-shadow:0 0 18px 4px var(--fault-glow)}
-.lamp.green.lit{background:radial-gradient(circle at 40% 35%,#9af0b0,var(--on) 70%);box-shadow:0 0 18px 4px var(--on-glow)}
-.led{width:26px;height:26px;margin-block:16px;border-radius:50%;background:var(--off-dark);border:2px solid var(--line);cursor:pointer}
-.led.lit{background:var(--on);box-shadow:0 0 12px 3px var(--on-glow)}
-/* Schiebeschalter */
-.slide{width:86px;height:40px;border-radius:6px;background:var(--btn-face);border:2px solid #8f979b;position:relative;cursor:pointer;margin-block:9px}
-.slide::after{content:"";position:absolute;top:4px;left:4px;width:36px;height:28px;border-radius:4px;background:#cfd4d7;transition:left .12s}
-.slide.on::after{left:42px;background:#7fe39a}
-.slide:disabled{cursor:not-allowed;opacity:.85}
-/* Leistungsteil */
-.breaker{width:86px;height:58px;border-radius:8px;background:var(--panel);border:2px solid var(--line);cursor:pointer;font-family:var(--f-display);font-weight:700;letter-spacing:.05em;font-size:14px}
-.breaker.on{border-color:var(--on);color:var(--chip-true-ink);background:var(--chip-true)}
-.breaker.trip{border-color:var(--fault);color:var(--fault)}
-.cont{width:70px;height:58px;border-radius:6px;background:var(--panel);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;cursor:pointer}
-.cont.on{border-color:var(--on);background:var(--chip-true);color:var(--chip-true-ink)}
-.motor{width:58px;height:58px;border-radius:50%;border:3px solid var(--steel-dark);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:18px;cursor:pointer;position:relative}
-.motor.run{border-color:var(--on)}
-.motor .rot{position:absolute;inset:-7px;border-radius:50%;border:3px solid transparent;border-top-color:var(--on)}
-.motor.cw .rot{animation:spin 0.8s linear infinite}
-.motor.ccw .rot{animation:spin 0.8s linear infinite reverse}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.motor .rot{animation:none!important}}
-.mini{font-size:11.5px;color:var(--muted)}
-.trip-btn{border:1px solid var(--fault);color:var(--fault);background:transparent;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;cursor:pointer}
-
-/* Moduswahl */
+.brk{width:54px;height:54px;border-radius:8px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;font-family:var(--f-display);font-weight:700;font-size:12px;line-height:1.05}
+.brk.on{border-color:var(--on);background:var(--chip-true);color:var(--chip-true-ink)}
+.brk.trip{border-color:var(--fault);color:var(--fault)}
+.inds{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
+.ind{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:0;background:none;padding:2px;cursor:pointer}
+.ind i{width:16px;height:16px;border-radius:50%;background:var(--off-dark);border:2px solid var(--line);flex:none}
+.ind.lit i{background:var(--on);box-shadow:0 0 8px 2px var(--on-glow);border-color:transparent}
+.ind.white.lit i{background:var(--white-lamp);box-shadow:0 0 8px 2px rgba(255,220,120,.6)}
+.ind.red.lit i{background:var(--fault);box-shadow:0 0 8px 2px var(--fault-glow)}
+.ind b{font-family:var(--f-mono);font-size:11.5px}
+.ind span{color:var(--muted)}
+.mode{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{border:0;background:var(--panel2);padding:6px 10px;font-size:12.5px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button{border:0;background:var(--panel2);padding:4px 9px;font-size:12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);font-weight:600}
+.mansw{display:flex;gap:6px;flex-wrap:wrap}
+.mansw button{border:1px solid var(--line);background:var(--panel2);border-radius:6px;padding:3px 8px;font-family:var(--f-mono);font-size:12px;cursor:pointer}
+.mansw button.t{background:var(--chip-true);color:var(--chip-true-ink);border-color:transparent}
 
-/* Netzwerke */
-.nw{border-top:1px solid var(--line);padding-block:12px;display:flex;flex-direction:column;gap:8px}
+/* Tutorial */
+.tut{background:var(--tut);border:1px solid var(--tut-line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.tut-top{display:flex;align-items:center;gap:8px}
+.tut-top .n{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);flex:1}
+.prog{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.tut h2{margin:0;font-family:var(--f-display);font-size:23px;letter-spacing:.02em;line-height:1.1;text-wrap:balance}
+.tut p{margin:0;max-width:65ch}
+.tut ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.task{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.task .ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px}
+.task.done .ic{background:var(--on);color:#fff}
+.task div{min-width:0}
+.task small{display:block;color:var(--muted);font-size:12px}
+.tctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tctl button{border:2px solid var(--accent);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tctl button.pressed,.tctl button.on{background:var(--accent);color:var(--accent-ink)}
+.explain{padding:10px;border-radius:10px;background:var(--chip-true);color:var(--ink);border:1px solid transparent}
+.explain b.nwt{font-family:var(--f-mono);font-size:12px;background:var(--panel);border-radius:4px;padding:0 5px;margin-right:4px}
+.explain code,.tut code{font-family:var(--f-mono);font-size:12.5px}
+.tut-btns{display:flex;gap:8px;flex-wrap:wrap}
+.tut-btns button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
+.tut-btns button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tut-btns button:disabled{opacity:.45;cursor:not-allowed}
+.tut-btns .grow{flex:1}
+
+/* Karten allgemein */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0}
+.card-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card-h h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.06em;text-transform:uppercase;flex:1}
+.cnt{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+/* Log */
+.log-f{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.log-f button{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+.log-f button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.log-list{height:34vh;min-height:220px;overflow-y:auto;padding:4px 0;margin:0;list-style:none;overscroll-behavior:contain}
+.le{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:2px 8px;padding:6px 12px;border-bottom:1px dashed var(--line);font-size:12.5px;align-items:baseline}
+.le time{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.le .b{font-family:var(--f-mono);font-size:10.5px;font-weight:600;padding:0 5px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
+.le .b.act{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.le .b.inp{background:var(--panel2)}
+.le .b.nw{background:var(--chip-true);color:var(--chip-true-ink);border-color:transparent}
+.le .b.hint{border-color:var(--warn);color:var(--warn)}
+.le .b.flt{background:var(--fault);color:#fff;border-color:var(--fault)}
+.le .b.tut{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.le .tx{min-width:0;overflow-wrap:anywhere}
+.le .why{grid-column:3;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.le.new{animation:flash .9s ease-out}
+@keyframes flash{0%{box-shadow:inset 0 0 0 2px var(--accent)}100%{box-shadow:inset 0 0 0 0 transparent}}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:8px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:1px solid transparent;border-bottom:0;background:none;padding:7px 11px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;color:var(--muted);white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+.tabp{padding:12px;min-width:0}
+.tabp h3{margin:12px 0 6px;font-family:var(--f-display);font-size:17px;letter-spacing:.04em}
+.tabp h3:first-child{margin-top:0}
+.tabp p,.tabp li{max-width:68ch}
+.tabp ul,.tabp ol{padding-left:20px;margin:0 0 8px}
+.sub{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+
+.nw{border-top:1px solid var(--line);padding-block:10px;display:flex;flex-direction:column;gap:7px}
 .nw:first-of-type{border-top:0;padding-top:0}
 .nw-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-.nw-h b{font-family:var(--f-display);font-size:16px;letter-spacing:.04em}
-.nw-h .tag{font-family:var(--f-mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+.nw-h b{font-family:var(--f-display);font-size:16px;letter-spacing:.03em}
+.tag{font-family:var(--f-mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:0 6px}
 .nw-c{font-size:12.5px;color:var(--muted)}
-.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.row .k{font-family:var(--f-mono);font-size:11px;color:var(--muted);min-width:76px}
+.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.row .k{font-family:var(--f-mono);font-size:11px;color:var(--muted);min-width:70px}
 .chip{font-family:var(--f-mono);font-size:12px;border-radius:5px;padding:2px 7px;border:1px solid var(--line);background:var(--chip-false);color:var(--chip-false-ink);cursor:pointer}
 .chip.t{background:var(--chip-true);color:var(--chip-true-ink);border-color:transparent}
 .op{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.res{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:2px 8px;border-radius:5px;border:2px solid var(--line)}
+.res{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:2px 8px;border-radius:5px;border:2px solid var(--line);background:var(--panel);cursor:pointer}
 .res.t{border-color:var(--on);color:var(--chip-true-ink);background:var(--chip-true)}
-.flash{animation:flash .9s ease-out}
-@keyframes flash{0%{box-shadow:0 0 0 3px var(--warn)}100%{box-shadow:0 0 0 0 transparent}}
+.nw.hot{animation:flash 1s ease-out}
 
-/* Prüfablauf */
+.tblw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td.mono{white-space:nowrap}
+td .v{font-family:var(--f-mono);font-size:12px;padding:1px 6px;border-radius:4px;background:var(--chip-false);color:var(--chip-false-ink)}
+td .v.t{background:var(--chip-true);color:var(--chip-true-ink)}
+tr.click{cursor:pointer}
+
 .steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;counter-reset:st}
 .steps li{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);counter-increment:st}
 .steps li::before{content:counter(st);flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);background:var(--panel)}
 .steps li.done::before{content:"✓";background:var(--on);border-color:var(--on);color:#fff}
 .steps li.done{border-color:var(--on)}
-.steps li div{min-width:0}
 .steps small{display:block;color:var(--muted)}
-
-/* Log */
-.log{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);min-width:0;
-  position:fixed;left:0;right:0;bottom:0;height:38vh;z-index:25;border-radius:12px 12px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.12);
-  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.log.min{height:calc(52px + env(safe-area-inset-bottom,0px))}
-@media (min-width:960px){.log{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);height:calc(100vh - 100px);border-radius:10px;box-shadow:none;padding:0}
-  .log.min{height:calc(100vh - 100px)} #logToggle{display:none}}
-.log-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.log-h h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.06em;text-transform:uppercase;flex:1}
-.log-h .cnt{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.log-f{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);overflow-x:auto}
-.log-f button{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
-.log-f button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
-.log.min .log-f,.log.min .log-list{display:none}
-.log-list{flex:1;overflow-y:auto;padding:6px 0;margin:0;list-style:none;overscroll-behavior:contain}
-.le{display:grid;grid-template-columns:auto auto 1fr;gap:2px 8px;padding:6px 12px;border-bottom:1px dashed var(--line);font-size:12.5px;align-items:baseline}
-.le time{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.le .b{font-family:var(--f-mono);font-size:10.5px;font-weight:600;padding:0 5px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
-.le .b.act{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.le .b.inp{background:var(--panel2)}
-.le .b.nw{background:var(--chip-true);color:var(--chip-true-ink);border-color:transparent}
-.le .b.hint{border-color:var(--warn);color:var(--warn)}
-.le .b.flt{background:var(--fault);color:#fff;border-color:var(--fault)}
-.le .tx{min-width:0;overflow-wrap:anywhere}
-.le .why{grid-column:3;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
-.le.new{animation:flash .9s ease-out}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel2);margin-bottom:6px}
+details summary{cursor:pointer;font-weight:600}
+details p{margin:6px 0 0}
 
 /* Info-Blatt */
 .sheet-bg{position:fixed;inset:0;background:rgba(10,14,12,.45);z-index:40}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;max-height:82vh;overflow-y:auto;
-  padding-block:16px calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  box-shadow:0 -10px 30px rgba(0,0,0,.25)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;max-height:80vh;overflow-y:auto;
+  padding-block:16px calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));box-shadow:0 -10px 30px rgba(0,0,0,.25)}
 @media (min-width:700px){.sheet{left:50%;right:auto;width:560px;transform:translateX(-50%);bottom:24px;border-radius:14px}}
-.sheet h3{margin:0;font-family:var(--f-display);font-size:24px;letter-spacing:.03em}
+.sheet h3{margin:0;font-family:var(--f-display);font-size:25px;letter-spacing:.03em}
 .sheet .meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
 .sheet .meta span{font-family:var(--f-mono);font-size:11.5px;padding:1px 7px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
 .sheet p{margin:0 0 10px;max-width:65ch}
 .sheet dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0 0 12px}
 .sheet dt{color:var(--muted);font-size:12.5px}
 .sheet dd{margin:0;min-width:0}
+.sheet .val{font-family:var(--f-mono);font-size:12px;padding:1px 7px;border-radius:5px;background:var(--chip-false);color:var(--chip-false-ink)}
+.sheet .val.t{background:var(--chip-true);color:var(--chip-true-ink)}
 .sheet .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.sheet .acts button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
-.sheet .acts button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sheet .acts button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}
+.sheet .acts button.primary{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
 .sheet .close{float:right;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:4px 10px;cursor:pointer}
 .sheet ul{margin:0;padding-left:18px}
 .sheet .hist{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <header class="top">
   <div class="top-row">
-    <div class="brand"><b>Blechbearbeitungsmaschine</b><span>FB1-Simulation · IHK W26 3090 B1/B2</span></div>
+    <div class="brand"><b>Blechbearbeitungsmaschine</b><span>Prüfungstrainer · IHK AP2 W26 3090 B1/B2</span></div>
     <div class="status" id="status" data-s="off"><i></i><span id="statusText">Anlage aus</span></div>
-    <button class="tbtn rs" id="resetBtn" type="button" aria-label="Grundstellung herstellen">↺</button>
+    <button class="tbtn acc" id="tutBtn" type="button">Tutorial</button>
+    <button class="tbtn" id="resetBtn" type="button" aria-label="Grundstellung herstellen" title="Grundstellung">↺</button>
   </div>
 </header>
 
-<div class="layout">
-<main>
-  <section class="sec" aria-labelledby="h-proc">
-    <div class="sec-head">
-      <div><h2 id="h-proc">Prozessbild</h2><p class="sub">Haspel, Klappe und Container. Tippe auf ein Teil für Details.</p></div>
+<div class="app">
+<div class="left">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="3D-Modell der Anlage"></canvas>
+    <div class="views" role="group" aria-label="Kamera">
+      <button type="button" data-view="gesamt" aria-pressed="true">Gesamt</button>
+      <button type="button" data-view="pult" aria-pressed="false">Bedienteil</button>
+      <button type="button" data-view="haspel" aria-pressed="false">Haspel</button>
+      <button type="button" data-view="schrank" aria-pressed="false">Schaltschrank</button>
+      <span class="sp"></span>
+      <button type="button" id="lblBtn" aria-pressed="true">Namen</button>
     </div>
-    <svg class="proc" id="proc" viewBox="0 0 360 250" role="img" aria-label="Prozessbild der Haspel mit Klappe und Container">
-      <defs>
-        <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--line)" stroke-width="2"/></pattern>
-      </defs>
-      <!-- Zuführung -->
-      <line id="feed" x1="6" y1="22" x2="120" y2="83" stroke="var(--steel)" stroke-width="3" opacity="0"/>
-      <!-- Haspel -->
-      <g class="hit" data-comp="M1">
-        <circle cx="120" cy="95" r="52" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/>
-        <circle id="coil" cx="120" cy="95" r="12" fill="var(--steel)" stroke="var(--steel-dark)" stroke-width="1.5"/>
-        <g id="spokes"><circle cx="120" cy="95" r="10" fill="var(--panel)" stroke="var(--steel-dark)" stroke-width="2"/>
-          <line x1="110" y1="95" x2="130" y2="95" stroke="var(--steel-dark)" stroke-width="2.5"/><line x1="120" y1="85" x2="120" y2="105" stroke="var(--steel-dark)" stroke-width="2.5"/></g>
-        <text x="120" y="160" text-anchor="middle" class="lbl">Haspel</text>
-      </g>
-      <line x1="120" y1="95" x2="230" y2="95" stroke="var(--steel-dark)" stroke-width="3"/>
-      <!-- Motor -->
-      <g class="hit" data-comp="M1">
-        <rect id="motorBox" x="230" y="70" width="58" height="50" rx="6" fill="var(--panel)" stroke="var(--steel-dark)" stroke-width="2"/>
-        <text x="259" y="92" text-anchor="middle" class="lbl">M1</text>
-        <text id="motorDir" x="259" y="108" text-anchor="middle">steht</text>
-      </g>
-      <!-- B13 -->
-      <g class="hit" data-comp="B13">
-        <rect x="30" y="38" width="30" height="16" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"/>
-        <circle id="svgB13" cx="38" cy="46" r="4" fill="var(--off-dark)"/>
-        <line x1="60" y1="50" x2="84" y2="64" stroke="var(--muted)" stroke-dasharray="2 2"/>
-        <text x="46" y="32" text-anchor="middle" class="lbl">B13</text>
-      </g>
-      <!-- Klappe -->
-      <g class="hit" data-comp="M2">
-        <g id="flap"><rect x="85" y="168" width="78" height="6" rx="2" fill="var(--steel-dark)"/></g>
-        <circle cx="85" cy="171" r="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>
-        <rect x="18" y="160" width="40" height="22" rx="3" id="valve" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"/>
-        <text x="38" y="175" text-anchor="middle" class="lbl">M2</text>
-        <line x1="58" y1="171" x2="80" y2="171" stroke="var(--ink)" stroke-width="1.2"/>
-        <text x="38" y="196" text-anchor="middle">Ventil</text>
-      </g>
-      <g class="hit" data-comp="B10">
-        <rect x="170" y="150" width="26" height="14" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"/>
-        <circle id="svgB10" cx="177" cy="157" r="4" fill="var(--off-dark)"/>
-        <text x="183" y="145" text-anchor="middle" class="lbl">B10</text>
-      </g>
-      <g class="hit" data-comp="B11">
-        <rect x="132" y="196" width="26" height="14" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"/>
-        <circle id="svgB11" cx="139" cy="203" r="4" fill="var(--off-dark)"/>
-        <text x="172" y="207" class="lbl">B11</text>
-      </g>
-      <!-- fallendes Band -->
-      <line id="drop" x1="120" y1="107" x2="120" y2="236" stroke="var(--steel)" stroke-width="3" stroke-dasharray="6 5" opacity="0"/>
-      <!-- Container -->
-      <g>
-        <path d="M60 214 L72 246 L210 246 L222 214" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
-        <rect id="bin" x="72" y="246" width="138" height="0" fill="url(#hatch)"/>
-        <text x="300" y="240" text-anchor="end">Container</text>
-      </g>
-    </svg>
-  </section>
+    <div class="hint3d" id="hint3d">Ziehen = drehen · zwei Finger = zoomen · Bauteil antippen = Erklärung · Taster im Modell gedrückt halten</div>
+  </div>
 
-  <section class="sec" aria-labelledby="h-op">
-    <h2 id="h-op">Bedienteil</h2>
-    <p class="sub">Taster halten = gedrückt. Tipp­betrieb S3 läuft nur, solange du hältst.</p>
-    <div class="grid" id="opGrid"></div>
-  </section>
-
-  <section class="sec" aria-labelledby="h-pcb">
-    <div class="sec-head">
-      <div><h2 id="h-pcb">Prozess-Simulationsplatine</h2><p class="sub">Sensoren B10, B11, B13 und Anzeigen P10 bis P12.</p></div>
+  <div class="bar" aria-label="Bedienung">
+    <div class="ctrls">
+      <div class="cb"><button class="sel" type="button" id="c-S1" aria-label="S1 Anlage EIN/AUS umschalten"></button><b>S1</b><small>Anlage EIN/AUS</small></div>
+      <div class="cb"><button class="pb" type="button" id="c-S2" aria-label="S2 gedrückt halten">S2</button><b>S2</b><small>Quittieren</small></div>
+      <div class="cb"><button class="pb green" type="button" id="c-S3" aria-label="S3 gedrückt halten">S3</button><b>S3</b><small>Rechtslauf tippen</small></div>
+      <div class="cb"><button class="pb blue" type="button" id="c-S4" aria-label="S4 gedrückt halten">S4</button><b>S4</b><small>Vorgang starten</small></div>
+      <div class="cb"><button class="brk on" type="button" id="c-F3">EIN</button><b>F3</b><small>Motorschutz</small></div>
+    </div>
+    <div class="inds" id="inds"></div>
+    <div class="mode">
+      <span>Sensoren B10/B11/B13:</span>
       <div class="seg" role="group" aria-label="Sensoren">
-        <button type="button" id="modeAuto" aria-pressed="true">Sensoren automatisch</button>
-        <button type="button" id="modeMan" aria-pressed="false">Von Hand</button>
+        <button type="button" id="modeAuto" aria-pressed="true">automatisch</button>
+        <button type="button" id="modeMan" aria-pressed="false">von Hand</button>
       </div>
+      <div class="mansw" id="mansw" hidden></div>
     </div>
-    <p class="sub" id="modeHint">Automatisch: Die Sensoren folgen dem Prozessbild. „Von Hand“ entspricht den Schiebeschaltern auf der Prüfungsplatine.</p>
-    <div class="grid" id="pcbGrid"></div>
-  </section>
-
-  <section class="sec" aria-labelledby="h-pow">
-    <h2 id="h-pow">Leistungsteil</h2>
-    <p class="sub">Motorschutzschalter, Wendeschützschaltung und Motor. Über F3 lässt sich eine Störung auslösen.</p>
-    <div class="grid" id="powGrid"></div>
-  </section>
-
-  <section class="sec" aria-labelledby="h-nw">
-    <h2 id="h-nw">SPS-Programm FB1 live</h2>
-    <p class="sub">Grün = Signal liefert 1 an den Baustein. ¬ = negierter Eingang (Kreis im FUP). Ein Zyklus läuft alle 50 ms, Netzwerk 1 bis 5 der Reihe nach.</p>
-    <div id="nwList"></div>
-  </section>
-
-  <section class="sec" aria-labelledby="h-steps">
-    <div class="sec-head"><div><h2 id="h-steps">Funktionsprüfung</h2><p class="sub">Der Ablauf, den der Prüfungsausschuss sehen will. Haken setzen sich von selbst.</p></div>
-    <span class="mini mono" id="stepCount">0/8</span></div>
-    <ol class="steps" id="steps"></ol>
-  </section>
-</main>
-
-<aside class="log" id="log" aria-labelledby="h-log">
-  <div class="log-h">
-    <h2 id="h-log">Log</h2><span class="cnt" id="logCnt">0</span>
-    <button class="tbtn" id="logCopy" type="button">Kopieren</button>
-    <button class="tbtn" id="logClear" type="button">Leeren</button>
-    <button class="tbtn" id="logToggle" type="button" aria-expanded="true">Einklappen</button>
   </div>
-  <div class="log-f" role="group" aria-label="Log filtern">
-    <button type="button" data-f="all" aria-pressed="true">Alles</button>
-    <button type="button" data-f="act" aria-pressed="false">Bedienung</button>
-    <button type="button" data-f="nw" aria-pressed="false">SPS-Netzwerke</button>
-    <button type="button" data-f="inp" aria-pressed="false">Eingänge</button>
-    <button type="button" data-f="hint" aria-pressed="false">Hinweise</button>
-  </div>
-  <ol class="log-list" id="logList" aria-live="polite"></ol>
-</aside>
+</div>
+
+<div class="right">
+  <section class="tut" id="tut" aria-live="polite"></section>
+
+  <section class="card logcard" aria-labelledby="h-log">
+    <div class="card-h"><h2 id="h-log">Log</h2><span class="cnt" id="logCnt">0</span>
+      <button class="tbtn" id="logCopy" type="button">Kopieren</button><button class="tbtn" id="logClear" type="button">Leeren</button></div>
+    <div class="log-f" role="group" aria-label="Log filtern">
+      <button type="button" data-f="all" aria-pressed="true">Alles</button>
+      <button type="button" data-f="act" aria-pressed="false">Bedienung</button>
+      <button type="button" data-f="nw" aria-pressed="false">SPS-Netzwerke</button>
+      <button type="button" data-f="inp" aria-pressed="false">Sensoren</button>
+      <button type="button" data-f="hint" aria-pressed="false">Hinweise</button>
+    </div>
+    <ol class="log-list" id="logList"></ol>
+  </section>
+
+  <section class="card tabcard">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="fb1" aria-selected="true">FB1 live</button>
+      <button type="button" role="tab" data-tab="zl" aria-selected="false">Zuordnungsliste</button>
+      <button type="button" role="tab" data-tab="ck" aria-selected="false">Funktionstest <span class="cnt" id="ckCnt"></span></button>
+      <button type="button" role="tab" data-tab="ihk" aria-selected="false">Was die IHK verlangt</button>
+    </div>
+    <div class="tabp" id="tab-fb1"><p class="sub">Grün = dieses Signal liefert 1 an den Baustein. ¬ = negierter Eingang (Kreis im FUP). Zyklus alle 50 ms, NW1 bis NW5 der Reihe nach.</p><div id="nwList"></div></div>
+    <div class="tabp" id="tab-zl" hidden></div>
+    <div class="tabp" id="tab-ck" hidden><p class="sub">Funktionstest aus der Musterlösung. Die Haken setzen sich von selbst, sobald du den Punkt in der Simulation gezeigt hast.</p><ol class="steps" id="steps"></ol></div>
+    <div class="tabp" id="tab-ihk" hidden></div>
+  </section>
+</div>
 </div>
 
 <div class="sheet-bg" id="sheetBg" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden></div>
 
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
 <script>
 (function(){
 'use strict';
-/* ---------- Zustand ---------- */
+const $ = id => document.getElementById(id);
+/* =========================================================
+   1. Zustand und Bauteildaten
+   ========================================================= */
 const s = {S1:0,S2:0,S3:0,S4:0,F3:1,B10:1,B11:0,B13:0, P1:0,P2:0,M2:0,Q1:0,Q2:0,MSt:0,MQ2:0};
-const phys = {flap:0, mat:0, bin:0, ang:0};
+const phys = {flap:0, mat:0, bin:0, ang:0, t:0};
 let auto = true;
 const flags = {};
+const HOLD = ['S2','S3','S4'];
 
-/* ---------- Bauteil-Stammdaten ---------- */
 const C = {
- S1:{bmk:'-S1',name:'Schalter „Anlage EIN/AUS“',typ:'Eingang',addr:'%I2.0',kontakt:'Schließer (NO), rastend',
-   desc:'Schaltet die Anlage ein und aus. Ist S1 aus, ist kein Aktor aktiv: P1 ist aus, und weil P1 in jedem Netzwerk als Freigabe steht, fallen M2, Q1 und Q2 sofort ab.',
-   v:['Anlage AUS','Anlage EIN'],nws:[1]},
- S2:{bmk:'-S2',name:'Taster „Störung quittieren“',typ:'Eingang',addr:'%I2.1',kontakt:'Schließer (NO), tastend',
-   desc:'Setzt den Merker „Störung Motor“ zurück. Das geht nur, wenn F3 wieder eingeschaltet ist (R1 = S2 UND F3). Solange F3 ausgelöst ist, bleibt der Setzeingang aktiv und die Störung steht weiter an.',
-   v:['nicht gedrückt','gedrückt'],nws:[2]},
- S3:{bmk:'-S3',name:'Taster „M1 Rechtslauf“',typ:'Eingang',addr:'%I2.2',kontakt:'Schließer (NO), tastend',
-   desc:'Tippbetrieb: Q1 (Rechtslauf, Aufwickeln) ist nur an, solange S3 gedrückt ist. Es gibt keine Selbsthaltung. Freigaben: Anlage EIN, keine Störung, Klappe geschlossen (B10), Ventil M2 aus und Q2 aus.',
-   v:['nicht gedrückt','gedrückt'],nws:[4]},
- S4:{bmk:'-S4',name:'Taster „Vorgang starten“',typ:'Eingang',addr:'%I3.0',kontakt:'Schließer (NO), tastend',
-   desc:'Startet das Entleeren. Wenn Material auf der Haspel ist (B13) und die Klappe geschlossen ist (B10), wird das Ventil M2 gesetzt und die Klappe öffnet sich. Während Q1 läuft, ist S4 gesperrt.',
-   v:['nicht gedrückt','gedrückt'],nws:[3]},
- F3:{bmk:'-F3',name:'Motorschutzschalter M1',typ:'Eingang',addr:'%I2.3',kontakt:'Hilfsschalter 13/14, Schließer',
-   desc:'Schützt den Motor M1 gegen Überlast. Der Hilfsschalter meldet „eingeschaltet“ = 1 an die SPS (drahtbruchsicher). Löst F3 aus, wird I2.3 = 0: Netzwerk 2 setzt den Merker „Störung Motor“, P2 leuchtet, M2 und Q2 werden rückgesetzt und Q1 gesperrt. Zusätzlich trennt F3 den Hauptstromkreis, der Motor steht also auch mechanisch.',
-   v:['ausgelöst','eingeschaltet'],nws:[2]},
- B10:{bmk:'-B10',name:'Sensor „Klappe geschlossen“',typ:'Eingang',addr:'%I2.4',kontakt:'Schließer (NO)',
-   desc:'Meldet, dass die Klappe zu ist. Freigabe für das Aufwickeln mit S3 (Netzwerk 4) und für das Öffnen mit S4 (Netzwerk 3).',
-   v:['Klappe nicht geschlossen','Klappe geschlossen'],nws:[3,4]},
- B11:{bmk:'-B11',name:'Sensor „Klappe geöffnet“',typ:'Eingang',addr:'%I2.5',kontakt:'Schließer (NO)',
-   desc:'Meldet, dass die Klappe ganz offen ist. Zusammen mit M2 setzt er den Merker für den Linkslauf Q2 (Netzwerk 5).',
-   v:['Klappe nicht offen','Klappe offen'],nws:[5]},
- B13:{bmk:'-B13',name:'Sensor „Blechband vorhanden“',typ:'Eingang',addr:'%I2.6',kontakt:'Schließer (NO)',
-   desc:'Meldet Material auf der Haspel. B13 = 1 ist Bedingung für S4. Fällt B13 auf 0 (Haspel leer), werden M2 und Q2 rückgesetzt: Motor aus, Klappe schließt.',
-   v:['kein Blechband','Blechband vorhanden'],nws:[3,5]},
- P1:{bmk:'-P1',name:'Meldeleuchte „Anlage EIN“',typ:'Ausgang',addr:'%Q2.5',kontakt:'Leuchtmelder weiß, 24 V DC',
-   desc:'Leuchtet, solange S1 eingeschaltet ist (Netzwerk 1: P1 = S1). Das Programm nutzt P1 danach als Freigabe in allen anderen Netzwerken.',
-   v:['aus','leuchtet'],nws:[1,2,3,4,5]},
- P2:{bmk:'-P2',name:'Meldeleuchte „Störung“',typ:'Ausgang',addr:'%Q2.6',kontakt:'Leuchtmelder rot, 24 V DC',
-   desc:'Leuchtet, wenn der Merker „Störung Motor“ gesetzt ist und die Anlage an ist (P2 = Störung UND P1). Erlischt nach Quittieren mit S2.',
-   v:['aus','leuchtet'],nws:[2]},
- Q1:{bmk:'-Q1',name:'Schütz M1 Rechtslauf',typ:'Ausgang',addr:'%Q2.0',kontakt:'Leistungsschütz AC-3, Spule 24 V DC',
-   desc:'Schaltet den Motor M1 im Rechtslauf: Das Blechband wird auf die Haspel gewickelt. Elektrisch gegen Q2 verriegelt (Öffner Q2 21/22 vor der Spule A1 von Q1), im Programm zusätzlich mit ¬Q2 und ¬M2. Hilfskontakt 13/14 schaltet P11.',
-   v:['abgefallen','angezogen'],nws:[4,3,5]},
- Q2:{bmk:'-Q2',name:'Schütz M1 Linkslauf',typ:'Ausgang',addr:'%Q2.1',kontakt:'Leistungsschütz AC-3, Spule 24 V DC',
-   desc:'Schaltet den Motor M1 im Linkslauf: Das Band wird abgewickelt und fällt durch die offene Klappe in den Container. Gesetzt über den Merker „Q2 M1 Linkslauf“ (Netzwerk 5), rückgesetzt bei Haspel leer (¬B13), Störung, Anlage aus oder Q1. Elektrisch gegen Q1 verriegelt. Hilfskontakt 13/14 schaltet P10.',
-   v:['abgefallen','angezogen'],nws:[5,4]},
- M2:{bmk:'-M2',name:'Ventil „Klappe“',typ:'Ausgang',addr:'%Q2.3',kontakt:'Magnetventil, auf der Platine als P12 nachgebildet',
-   desc:'Öffnet die Klappe zum Container. Wird mit S4 gesetzt (SR-Baustein in Netzwerk 3) und bleibt gesetzt, bis die Haspel leer ist (¬B13), eine Störung kommt oder die Anlage aus ist. Ohne Ansteuerung schließt die Klappe.',
-   v:['aus, Klappe schließt','an, Klappe öffnet'],nws:[3,4,5]},
- M1:{bmk:'-M1',name:'Motor „Haspel“',typ:'Antrieb',addr:'über Q1/Q2',kontakt:'Drehstrommotor 400 V Δ, 3,25 A',
-   desc:'Treibt die Haspel an. Rechtslauf (Q1) wickelt auf, Linkslauf (Q2) wickelt ab. Die Drehrichtung wechselt durch Tausch zweier Außenleiter in der Wendeschützschaltung.',
-   v:['steht','dreht'],nws:[4,5]},
- P10:{bmk:'-P10',name:'Anzeige „M1 Linkslauf“',typ:'Anzeige',addr:'Hilfskontakt Q2 13/14',kontakt:'LED auf der Prozess-Simulationsplatine',
-   desc:'Wird nicht von der SPS, sondern direkt vom Hilfskontakt des Schützes Q2 geschaltet. So sieht man, dass das Schütz wirklich angezogen hat.',v:['aus','leuchtet'],nws:[5]},
- P11:{bmk:'-P11',name:'Anzeige „M1 Rechtslauf“',typ:'Anzeige',addr:'Hilfskontakt Q1 13/14',kontakt:'LED auf der Prozess-Simulationsplatine',
-   desc:'Wird direkt vom Hilfskontakt des Schützes Q1 geschaltet und zeigt den Rechtslauf an.',v:['aus','leuchtet'],nws:[4]},
- P12:{bmk:'-P12',name:'Simulation „M2“',typ:'Anzeige',addr:'%Q2.3 parallel',kontakt:'LED auf der Prozess-Simulationsplatine',
-   desc:'Bildet das Ventil M2 nach. Hängt direkt am SPS-Ausgang %Q2.3.',v:['aus','leuchtet'],nws:[3]},
- MSt:{lbl:'Störung',bmk:'Merker Störung Motor',name:'Statische Variable im FB1',typ:'Merker (Static)',addr:'DB1',kontakt:'SR-Flipflop, rücksetzdominant',
-   desc:'Speichert die Störung. Setzen: ¬F3. Rücksetzen: S2 UND F3. Der Merker sperrt Q1, M2 und Q2 und schaltet P2.',v:['keine Störung','Störung gespeichert'],nws:[2,3,4,5]},
- MQ2:{lbl:'MQ2',bmk:'Merker Q2 M1 Linkslauf',name:'Statische Variable im FB1',typ:'Merker (Static)',addr:'DB1',kontakt:'SR-Flipflop, rücksetzdominant',
-   desc:'Hält den Linkslauf. Setzen: P1 ∧ ¬Störung ∧ M2 ∧ B11. Rücksetzen: Störung ∨ ¬P1 ∨ ¬B13 ∨ Q1. Sein Ausgang wird auf Q2 geschrieben.',v:['nicht gesetzt','gesetzt'],nws:[5]}
+ S1:{bmk:'-S1',name:'Schalter „Anlage EIN/AUS“',typ:'Eingang',addr:'%I2.0',kontakt:'Schließer, rastend',v:['Anlage AUS','Anlage EIN'],nws:[1],
+   desc:'Schaltet die Anlage ein und aus. Ist S1 aus, ist laut Funktionsbeschreibung kein Aktor aktiv: P1 geht aus, und weil P1 in jedem Netzwerk als Freigabe steht, fallen M2, Q1 und Q2 sofort ab.'},
+ S2:{bmk:'-S2',name:'Taster „Störung quittieren“',typ:'Eingang',addr:'%I2.1',kontakt:'Schließer, tastend',v:['nicht gedrückt','gedrückt'],nws:[2],
+   desc:'Setzt den Merker „Störung Motor“ zurück. Das klappt nur, wenn F3 wieder eingeschaltet ist (R1 = S2 ∧ F3). Danach erlischt P2.'},
+ S3:{bmk:'-S3',name:'Taster „M1 Rechtslauf“',typ:'Eingang',addr:'%I2.2',kontakt:'Schließer, tastend',v:['nicht gedrückt','gedrückt'],nws:[4],
+   desc:'Tippbetrieb: Q1 (Rechtslauf, Band aufwickeln) ist nur an, solange S3 gedrückt ist. Keine Selbsthaltung. Freigaben: Anlage EIN, keine Störung, Klappe geschlossen (B10), M2 aus, Q2 aus.'},
+ S4:{bmk:'-S4',name:'Taster „Vorgang starten“',typ:'Eingang',addr:'%I3.0',kontakt:'Schließer, tastend',v:['nicht gedrückt','gedrückt'],nws:[3],
+   desc:'Startet das Entleeren: Ist Material auf der Haspel (B13) und die Klappe zu (B10), wird M2 gesetzt und die Klappe öffnet. Ein kurzer Druck reicht, weil M2 über einen SR-Baustein gespeichert wird.'},
+ F3:{bmk:'-F3',name:'Motorschutzschalter M1',typ:'Eingang',addr:'%I2.3',kontakt:'Hilfsschalter 13/14',v:['ausgelöst','eingeschaltet'],nws:[2],
+   desc:'Schützt M1 gegen Überlast, eingestellt auf 3,25 A (Leistungsschild). Der Hilfsschalter meldet „eingeschaltet“ = 1, das ist drahtbruchsicher. Löst F3 aus, wird %I2.3 = 0: NW2 setzt den Störmerker, P2 leuchtet, M2/Q2 werden rückgesetzt, Q1 gesperrt.'},
+ B10:{bmk:'-B10',name:'Sensor „Klappe geschlossen“',typ:'Eingang',addr:'%I2.4',kontakt:'Schließer',v:['Klappe nicht zu','Klappe geschlossen'],nws:[3,4],
+   desc:'Meldet, dass die Klappe zu ist. Freigabe für das Aufwickeln mit S3 (NW4) und für das Öffnen mit S4 (NW3).'},
+ B11:{bmk:'-B11',name:'Sensor „Klappe geöffnet“',typ:'Eingang',addr:'%I2.5',kontakt:'Schließer',v:['Klappe nicht offen','Klappe offen'],nws:[5],
+   desc:'Meldet, dass die Klappe ganz offen ist. Zusammen mit M2 startet er den Linkslauf Q2 (NW5).'},
+ B13:{bmk:'-B13',name:'Sensor „Blechband vorhanden“',typ:'Eingang',addr:'%I2.6',kontakt:'Schließer',v:['kein Blechband','Blechband vorhanden'],nws:[3,5],
+   desc:'Meldet Material auf der Haspel. B13 = 1 ist Bedingung für S4. Fällt B13 auf 0, werden M2 und Q2 rückgesetzt: Motor aus, Klappe schließt.'},
+ P1:{bmk:'-P1',name:'Meldeleuchte „Anlage EIN“',typ:'Ausgang',addr:'%Q2.5',kontakt:'Leuchtmelder weiß',v:['aus','leuchtet'],nws:[1,2,3,4,5],
+   desc:'Leuchtet, solange S1 an ist (NW1: P1 = S1). Das Programm nutzt P1 danach in allen Netzwerken als Freigabe „Anlage EIN“.'},
+ P2:{bmk:'-P2',name:'Meldeleuchte „Störung“',typ:'Ausgang',addr:'%Q2.6',kontakt:'Leuchtmelder rot',v:['aus','leuchtet'],nws:[2],
+   desc:'Leuchtet, wenn der Störmerker gesetzt ist und die Anlage an ist (P2 = Störung ∧ P1).'},
+ Q1:{bmk:'-Q1',name:'Schütz M1 Rechtslauf',typ:'Ausgang',addr:'%Q2.0',kontakt:'Schütz AC-3, Spule 24 V DC',v:['abgefallen','angezogen'],nws:[4,3,5],
+   desc:'Schaltet M1 im Rechtslauf (aufwickeln). Doppelt verriegelt: im Programm mit ¬Q2 und ¬M2, in der Hardware mit dem Öffner Q2 21/22 vor der Spule von Q1. Der Hilfskontakt 13/14 schaltet P11.'},
+ Q2:{bmk:'-Q2',name:'Schütz M1 Linkslauf',typ:'Ausgang',addr:'%Q2.1',kontakt:'Schütz AC-3, Spule 24 V DC',v:['abgefallen','angezogen'],nws:[5,4],
+   desc:'Schaltet M1 im Linkslauf (abwickeln in den Container). Q2 tauscht zwei Außenleiter (L1/L3) und dreht so das Drehfeld um. Hardware-Verriegelung über den Öffner Q1 21/22, Hilfskontakt 13/14 schaltet P10.'},
+ M2:{bmk:'-M2',name:'Ventil „Klappe“',typ:'Ausgang',addr:'%Q2.3',kontakt:'Magnetventil, auf der Platine als P12',v:['aus, Klappe zu','an, Klappe auf'],nws:[3,4,5],
+   desc:'Öffnet die Klappe zum Container. Wird mit S4 gesetzt (SR in NW3) und bleibt an, bis die Haspel leer ist (¬B13), eine Störung kommt oder S1 aus ist.'},
+ M1:{bmk:'-M1',name:'Motor „Haspel“',typ:'Antrieb',addr:'über Q1/Q2',kontakt:'Drehstrommotor 400 V Δ, 3,25 A',v:['steht','dreht'],nws:[4,5],
+   desc:'Treibt die Haspel an. Rechtslauf (Q1) wickelt das Blechband auf, Linkslauf (Q2) wickelt es ab, und das Band fällt durch die offene Klappe in den Container.'},
+ P10:{bmk:'-P10',name:'Anzeige „M1 Linkslauf“',typ:'Anzeige',addr:'Hilfskontakt Q2 13/14',kontakt:'LED auf der Platine',v:['aus','leuchtet'],nws:[5],
+   desc:'Hängt nicht an der SPS, sondern am Hilfskontakt von Q2. Sie zeigt also, dass das Schütz wirklich angezogen hat, nicht nur, dass die SPS es will.'},
+ P11:{bmk:'-P11',name:'Anzeige „M1 Rechtslauf“',typ:'Anzeige',addr:'Hilfskontakt Q1 13/14',kontakt:'LED auf der Platine',v:['aus','leuchtet'],nws:[4],
+   desc:'Hängt am Hilfskontakt von Q1 und zeigt den tatsächlichen Rechtslauf.'},
+ P12:{bmk:'-P12',name:'Simulation „M2“',typ:'Anzeige',addr:'%Q2.3',kontakt:'LED auf der Platine',v:['aus','leuchtet'],nws:[3],
+   desc:'Bildet das Ventil M2 auf der Prozess-Simulationsplatine nach und hängt direkt am Ausgang %Q2.3.'},
+ MSt:{lbl:'Störung',bmk:'Merker Störung Motor',name:'Statische Variable im FB1',typ:'Merker',addr:'DB1',kontakt:'SR, rücksetzdominant',v:['keine Störung','Störung gespeichert'],nws:[2,3,4,5],
+   desc:'Speichert die Störung. Setzen: ¬F3. Rücksetzen: S2 ∧ F3. Er sperrt Q1, M2 und Q2 und schaltet P2.'},
+ MQ2:{lbl:'MQ2',bmk:'Merker Q2 M1 Linkslauf',name:'Statische Variable im FB1',typ:'Merker',addr:'DB1',kontakt:'SR, rücksetzdominant',v:['nicht gesetzt','gesetzt'],nws:[5],
+   desc:'Hält den Linkslauf. Setzen: P1 ∧ ¬Störung ∧ M2 ∧ B11. Rücksetzen: Störung ∨ ¬P1 ∨ ¬B13 ∨ Q1. Wird auf Q2 geschrieben.'},
+ K1:{bmk:'-K1',name:'Automatisierungsgerät (SPS)',typ:'Steuerung',addr:'S7-1200, OB1 → FB1',kontakt:'DI %I2.0–%I3.0, DQ %Q2.0–%Q2.6',v:['STOP','RUN'],nws:[1,2,3,4,5],
+   desc:'Liest alle Eingänge, rechnet NW1 bis NW5 und schreibt die Ausgänge. Die grünen LEDs vorne zeigen jeden Ein- und Ausgang, genau wie an der echten SPS. Angeschlossen über die Klemmleiste -X4.'},
+ PCB:{bmk:'Prozess-Simulationsplatine',name:'Ersatz für die echte Maschine',typ:'Platine',addr:'Steckkartenhalter -X10',kontakt:'Schiebeschalter B10–B13, LEDs P10–P14',v:['',''],nws:[3,4,5],
+   desc:'In der Prüfung gibt es keine echte Haspel. Die Sensoren sind Schiebeschalter, die du selbst umlegst, und die Aktoren sind LEDs. Mit „von Hand“ unter der Bedienleiste spielst du genau das nach.'}
 };
 const short = k => C[k].lbl || C[k].bmk.replace(/^-/,'');
 
-/* ---------- Netzwerke ---------- */
+/* =========================================================
+   2. Programm FB1 (Netzwerke 1 bis 5)
+   ========================================================= */
 const T = (n,neg) => ({n, neg:!!neg});
 const NW = [
  {id:1,title:'Meldeleuchte -P1 Anlage EIN',comment:'P1 = S1',kind:'assign',target:'P1',g:{op:'and',t:[T('S1')]}},
- {id:2,title:'Ansteuerung Meldeleuchte -P2 Störung',comment:'Motorschutz F3 löst aus → P2 leuchtet. S2 quittiert, nur wenn F3 wieder eingeschaltet ist.',
+ {id:2,title:'Ansteuerung Meldeleuchte -P2 Störung',comment:'F3 löst aus → P2 leuchtet. S2 quittiert, nur wenn F3 wieder eingeschaltet ist.',
    kind:'sr',mem:'MSt',set:{op:'and',t:[T('F3',1)]},reset:{op:'and',t:[T('S2'),T('F3')]},out:{target:'P2',g:{op:'and',t:[T('MSt'),T('P1')]}}},
- {id:3,title:'Ventil -M2 Klappe öffnen',comment:'S4 öffnet die Klappe, wenn Blechband vorhanden (B13) und Klappe geschlossen (B10). Kein Blechband mehr → Ventil aus, Klappe schließt.',
+ {id:3,title:'Ventil -M2 Klappe öffnen',comment:'S4 öffnet, wenn Blechband vorhanden (B13) und Klappe zu (B10). Kein Blechband → Ventil aus, Klappe schließt.',
    kind:'sr',mem:'M2',set:{op:'and',t:[T('P1'),T('MSt',1),T('B13'),T('B10'),T('S4'),T('Q1',1)]},reset:{op:'or',t:[T('MSt'),T('P1',1),T('B13',1)]}},
- {id:4,title:'Motor -M1 Haspel Rechtslauf',comment:'Schütz Q1, Tippbetrieb mit S3, nur bei geschlossener Klappe.',
+ {id:4,title:'Motor -M1 Haspel Rechtslauf',comment:'Q1 im Tippbetrieb mit S3, nur bei geschlossener Klappe.',
    kind:'assign',target:'Q1',g:{op:'and',t:[T('P1'),T('MSt',1),T('S3'),T('B10'),T('M2',1),T('Q2',1)]}},
- {id:5,title:'Motor -M1 Haspel Linkslauf',comment:'Schütz Q2 startet, sobald die Klappe offen ist (B11), aus, wenn kein Blechband mehr da ist.',
+ {id:5,title:'Motor -M1 Haspel Linkslauf',comment:'Q2 startet, sobald die Klappe offen ist (B11), aus wenn kein Blechband mehr da ist.',
    kind:'sr',mem:'MQ2',set:{op:'and',t:[T('P1'),T('MSt',1),T('M2'),T('B11')]},reset:{op:'or',t:[T('MSt'),T('P1',1),T('B13',1),T('Q1')]},out:{target:'Q2',g:{op:'and',t:[T('MQ2')]}}}
 ];
 const tv = t => t.neg ? !s[t.n] : !!s[t.n];
 const tl = t => (t.neg?'¬':'') + short(t.n);
-const evalG = g => { const r = g.t.map(tv); return {v: g.op==='and' ? r.every(Boolean) : r.some(Boolean), tt:g.t.filter((t,i)=>r[i]), ft:g.t.filter((t,i)=>!r[i])}; };
+const evalG = g => { const r=g.t.map(tv); return {v:g.op==='and'?r.every(Boolean):r.some(Boolean), tt:g.t.filter((t,i)=>r[i]), ft:g.t.filter((t,i)=>!r[i])}; };
 const sig = n => `${short(n)} = ${s[n]?1:0} (${C[n].v[s[n]?1:0]})`;
 
-/* ---------- Log ---------- */
-const logEl = document.getElementById('logList'), logCnt = document.getElementById('logCnt');
-const LOG = []; let filter = 'all';
-const badgeTxt = {act:'BEDIENUNG',inp:'EINGANG',hint:'HINWEIS',flt:'STÖRUNG',sys:'SYSTEM'};
-function ts(){ const d=new Date(); return d.toLocaleTimeString('de-DE',{hour12:false})+'.'+String(Math.floor(d.getMilliseconds()/100)); }
-function log(kind, text, why, nw){
-  const e = {t:ts(), kind, text, why, nw};
-  LOG.unshift(e); if (LOG.length>500) LOG.pop();
-  if (match(e)) { logEl.prepend(renderLog(e,true)); while (logEl.children.length>300) logEl.lastChild.remove(); }
-  logCnt.textContent = LOG.length + ' Einträge';
+/* =========================================================
+   3. Log
+   ========================================================= */
+const logEl=$('logList'), logCnt=$('logCnt'); const LOG=[]; let filter='all';
+const badgeTxt={act:'BEDIENUNG',inp:'SENSOR',hint:'HINWEIS',flt:'STÖRUNG',sys:'SYSTEM',tut:'TUTORIAL'};
+function ts(){ const d=new Date(); return d.toLocaleTimeString('de-DE',{hour12:false})+'.'+Math.floor(d.getMilliseconds()/100); }
+function log(kind,text,why,nw){
+  const e={t:ts(),kind,text,why,nw}; LOG.unshift(e); if(LOG.length>600) LOG.pop();
+  if(match(e)){ logEl.prepend(renderLog(e,true)); while(logEl.children.length>300) logEl.lastChild.remove(); }
+  logCnt.textContent=LOG.length+' Einträge';
+  if(nw){ const el=$('nw'+nw); if(el){ el.classList.remove('hot'); void el.offsetWidth; el.classList.add('hot'); } }
 }
-function match(e){ if (filter==='all') return true; if (filter==='nw') return !!e.nw; if (filter==='hint') return e.kind==='hint'||e.kind==='flt'; return e.kind===filter; }
+function match(e){ if(filter==='all') return true; if(filter==='nw') return !!e.nw; if(filter==='hint') return e.kind==='hint'||e.kind==='flt'; return e.kind===filter; }
 function renderLog(e,isNew){
   const li=document.createElement('li'); li.className='le'+(isNew?' new':'');
   const tm=document.createElement('time'); tm.textContent=e.t;
-  const b=document.createElement('span'); b.className='b '+(e.nw?'nw':e.kind); b.textContent=e.nw?('NW'+e.nw):badgeTxt[e.kind]||e.kind;
-  const tx=document.createElement('span'); tx.className='tx'; tx.textContent=e.text;
-  li.append(tm,b,tx);
-  if (e.why){ const w=document.createElement('span'); w.className='why'; w.textContent=e.why; li.append(w); }
+  const b=document.createElement('span'); b.className='b '+(e.nw?'nw':e.kind); b.textContent=e.nw?('NW'+e.nw):(badgeTxt[e.kind]||e.kind);
+  const tx=document.createElement('span'); tx.className='tx'; tx.textContent=e.text; li.append(tm,b,tx);
+  if(e.why){ const w=document.createElement('span'); w.className='why'; w.textContent=e.why; li.append(w); }
   return li;
 }
 function rerenderLog(){ logEl.textContent=''; LOG.filter(match).slice(0,300).forEach(e=>logEl.append(renderLog(e,false))); }
 
-/* ---------- SPS-Zyklus ---------- */
-function setOut(nw, target, g){
-  const old = s[target]?1:0, r = evalG(g), nv = r.v?1:0; s[target]=nv;
-  if (old!==nv){
-    const why = nv ? 'Alle UND-Bedingungen erfüllt: ' + g.t.map(tl).join(' ∧ ')
-                   : 'UND unterbrochen durch: ' + r.ft.map(t=>sig(t.n)).join(', ');
-    log('nw', `${short(target)} ${old} → ${nv}: ${C[target].v[nv]}`, why, nw);
-    changed(target);
+/* =========================================================
+   4. SPS-Zyklus
+   ========================================================= */
+function setOut(nw,target,g){
+  const old=s[target]?1:0, r=evalG(g), nv=r.v?1:0; s[target]=nv;
+  if(old!==nv){
+    const why = nv ? 'Alle UND-Bedingungen erfüllt: '+g.t.map(tl).join(' ∧ ') : 'UND unterbrochen durch: '+r.ft.map(t=>sig(t.n)).join(', ');
+    log('nw',`${short(target)} ${old} → ${nv}: ${C[target].v[nv]}`,why,nw); changed(target);
   }
 }
 function scan(){
-  for (const n of NW){
-    if (n.kind==='assign'){ setOut(n.id, n.target, n.g); continue; }
-    const old = s[n.mem]?1:0, S=evalG(n.set), R=evalG(n.reset);
-    let q = old; if (S.v) q=1; if (R.v) q=0;
-    s[n.mem]=q;
-    if (q!==old){
-      let why;
-      if (q) why = 'Setzeingang S erfüllt: ' + n.set.t.map(t=>sig(t.n)).join(', ');
-      else why = 'Rücksetzeingang R1 erfüllt: ' + (n.reset.op==='or' ? R.tt : n.reset.t).map(t=>sig(t.n)).join(', ') + (S.v?' (S ebenfalls 1, R1 ist dominant)':'');
+  for(const n of NW){
+    if(n.kind==='assign'){ setOut(n.id,n.target,n.g); continue; }
+    const old=s[n.mem]?1:0, S=evalG(n.set), R=evalG(n.reset); let q=old; if(S.v) q=1; if(R.v) q=0; s[n.mem]=q;
+    if(q!==old){
+      const why = q ? 'Setzen (S) erfüllt: '+n.set.t.map(t=>sig(t.n)).join(', ')
+                    : 'Rücksetzen (R1) erfüllt: '+(n.reset.op==='or'?R.tt:n.reset.t).map(t=>sig(t.n)).join(', ')+(S.v?' · S war auch 1, R1 ist dominant':'');
       const label = n.mem==='M2' ? `M2 ${old} → ${q}: ${C.M2.v[q]}` : `${C[n.mem].bmk} ${old} → ${q}`;
-      log(n.mem==='MSt'&&q ? 'flt':'nw', label, why, n.id);
-      changed(n.mem);
+      log(n.mem==='MSt'&&q?'flt':'nw',label,why,n.id); changed(n.mem);
     }
-    if (n.out) setOut(n.id, n.out.target, n.out.g);
+    if(n.out) setOut(n.id,n.out.target,n.out.g);
   }
 }
 
-/* ---------- Bedienhandlungen ---------- */
-function press(k, v, src){
-  v = v?1:0; if (s[k]===v) return;
-  const old=s[k]; s[k]=v;
-  const verb = {S1:v?'eingeschaltet':'ausgeschaltet',F3:v?'wieder eingeschaltet':'ausgelöst'}[k] || (k[0]==='B' ? (v?'meldet 1':'meldet 0') : (v?'gedrückt':'losgelassen'));
-  const kind = src==='proc' ? 'inp' : 'act';
-  log(kind, `${short(k)} ${verb} · ${C[k].addr} = ${v}`, src==='proc' ? C[k].v[v] : null);
-  if (k==='F3' && !v) log('flt','Motorschutz F3 hat ausgelöst. Hauptstromkreis von M1 getrennt.', null);
+/* =========================================================
+   5. Bedienhandlungen
+   ========================================================= */
+function press(k,v,src){
+  v=v?1:0; if(s[k]===v) return; s[k]=v;
+  const verb={S1:v?'eingeschaltet':'ausgeschaltet',F3:v?'wieder eingeschaltet':'ausgelöst'}[k] || (k[0]==='B'?(v?'meldet 1':'meldet 0'):(v?'gedrückt':'losgelassen'));
+  log(src==='proc'?'inp':'act',`${short(k)} ${verb} · ${C[k].addr} = ${v}`, src==='proc'?C[k].v[v]:null);
+  if(k==='F3'&&!v) log('flt','Motorschutz F3 hat ausgelöst. Hauptstromkreis M1 getrennt.',null);
   changed(k);
-  const before = {M2:s.M2,Q1:s.Q1,MSt:s.MSt};
+  const before={M2:s.M2,MSt:s.MSt};
   scan();
-  if (src!=='proc' && v){
-    if (k==='S3' && !s.Q1){
-      const ft = evalG(NW[3].g).ft.filter(t=>t.n!=='S3');
-      log('hint','S3 gedrückt, Q1 bleibt aus', 'Netzwerk 4 gesperrt durch: '+ft.map(t=>sig(t.n)).join(', '));
-      if (ft.some(t=>t.n==='B10')) flags.s3blocked=1;
-    }
-    if (k==='S4' && !s.M2 && !before.M2){
-      const ft = evalG(NW[2].set).ft.filter(t=>t.n!=='S4');
-      log('hint','S4 gedrückt, M2 bleibt aus', 'Setzeingang Netzwerk 3 nicht erfüllt: '+ft.map(t=>sig(t.n)).join(', '));
-    }
-    if (k==='S4' && before.M2) log('hint','S4 gedrückt, M2 ist schon gesetzt', 'Der SR-Baustein hält M2 bereits.');
-    if (k==='S2' && before.MSt && s.MSt) log('hint','S2 gedrückt, Störung bleibt', 'R1 = S2 ∧ F3, aber F3 = 0. Erst F3 wieder einschalten, dann quittieren.');
-    if (k==='S2' && !before.MSt) log('hint','S2 gedrückt, keine Störung zu quittieren', null);
-    if (k==='S2' && before.MSt && !s.MSt) flags.acked=1;
+  if(src!=='proc' && v){
+    if(k==='S3'&&!s.Q1){ const ft=evalG(NW[3].g).ft.filter(t=>t.n!=='S3'); log('hint','S3 gedrückt, Q1 bleibt aus','NW4 gesperrt durch: '+ft.map(t=>sig(t.n)).join(', ')); if(ft.some(t=>t.n==='B10')) flags.s3blocked=1; }
+    if(k==='S4'&&!s.M2&&!before.M2){ const ft=evalG(NW[2].set).ft.filter(t=>t.n!=='S4'); log('hint','S4 gedrückt, M2 bleibt aus','Setzen in NW3 nicht erfüllt: '+ft.map(t=>sig(t.n)).join(', ')); }
+    if(k==='S4'&&before.M2) log('hint','S4 gedrückt, M2 ist schon gesetzt','Der SR-Baustein hält M2 bereits.');
+    if(k==='S2'&&before.MSt&&s.MSt){ log('hint','S2 gedrückt, Störung bleibt','R1 = S2 ∧ F3, aber F3 = 0. Erst F3 wieder einschalten.'); flags.ackEarly=1; }
+    if(k==='S2'&&!before.MSt) log('hint','S2 gedrückt, keine Störung zu quittieren',null);
+    if(k==='S2'&&before.MSt&&!s.MSt) flags.acked=1;
+    if(k==='S3'&&!s.S1) flags.offTest=1;
   }
   render();
 }
 
-/* ---------- Prozess-Physik ---------- */
+/* =========================================================
+   6. Prozess (Physik)
+   ========================================================= */
 function physics(dt){
-  const kQ1 = s.Q1 && !s.Q2, kQ2 = s.Q2 && !s.Q1, motor = s.F3 && (kQ1||kQ2);
-  const target = s.M2 ? 1 : 0;
-  if (phys.flap<target) phys.flap=Math.min(1,phys.flap+dt/1.4); else if (phys.flap>target) phys.flap=Math.max(0,phys.flap-dt/1.4);
-  if (motor && kQ1) { phys.mat=Math.min(1,phys.mat+dt/3); phys.ang+=dt*360; }
-  if (motor && kQ2) { const d=Math.min(phys.mat,dt/4); phys.mat-=d; phys.bin=Math.min(1,phys.bin+d*0.35); phys.ang-=dt*360; }
-  if (auto){
-    const b10 = phys.flap<0.02?1:0, b11 = phys.flap>0.98?1:0, b13 = phys.mat>0.015?1:0;
-    if (b10!==s.B10) press('B10',b10,'proc');
-    if (b11!==s.B11) press('B11',b11,'proc');
-    if (b13!==s.B13) press('B13',b13,'proc');
+  phys.t+=dt;
+  const kQ1=s.Q1&&!s.Q2, kQ2=s.Q2&&!s.Q1, motor=s.F3&&(kQ1||kQ2);
+  const target=s.M2?1:0;
+  if(phys.flap<target) phys.flap=Math.min(1,phys.flap+dt/1.6); else if(phys.flap>target) phys.flap=Math.max(0,phys.flap-dt/1.6);
+  if(motor&&kQ1){ phys.mat=Math.min(1,phys.mat+dt/4); phys.ang+=dt*4; }
+  if(motor&&kQ2){ const d=Math.min(phys.mat,dt/14); phys.mat-=d; phys.bin=Math.min(1,phys.bin+d*0.3); phys.ang-=dt*4; }
+  if(auto){
+    const b10=phys.flap<0.02?1:0, b11=phys.flap>0.98?1:0, b13=phys.mat>0.012?1:0;
+    if(b10!==s.B10) press('B10',b10,'proc');
+    if(b11!==s.B11) press('B11',b11,'proc');
+    if(b13!==s.B13) press('B13',b13,'proc');
   }
 }
 
-/* ---------- UI-Aufbau ---------- */
-const $ = id => document.getElementById(id);
-function card(k, inner){
-  const d=document.createElement('div'); d.className='comp'; d.dataset.k=k;
-  d.innerHTML = `<button class="info" type="button" aria-label="Info zu ${C[k].bmk}" data-info="${k}">i</button>
-   <span class="bmk">${C[k].bmk}</span>${inner}<span class="nm">${C[k].name.replace(/^Schalter |^Taster |^Meldeleuchte |^Sensor |^Anzeige /,'')}</span>
-   <span class="addr">${C[k].addr}</span><span class="val" data-val="${k}"></span>`;
-  return d;
+/* =========================================================
+   7. Funktionstest-Checkliste (Musterlösung Teil 12)
+   ========================================================= */
+const CHECK=[
+ ['S1 ein','P1 leuchtet.',()=>flags.p1],
+ ['S3 tippen bei B10 = 1','Q1 nur solange S3 gedrückt, P11 leuchtet.',()=>flags.q1off],
+ ['B13 = 1, B10 = 1, S4 kurz','M2 (P12) an und bleibt an.',()=>flags.m2],
+ ['B10 → 0, B11 → 1','Q2 Linkslauf, P10 leuchtet.',()=>flags.q2],
+ ['S3 bei offener Klappe','Q1 bleibt aus (Verriegelung).',()=>flags.s3blocked],
+ ['B13 → 0','Q2 und M2 aus, Klappe schließt.',()=>flags.cycle],
+ ['F3 auslösen','Alles aus, P2 leuchtet.',()=>flags.fault],
+ ['S2 bei F3 aus','P2 bleibt an.',()=>flags.ackEarly],
+ ['F3 ein, dann S2','P2 aus, Neustart nur mit S4.',()=>flags.acked],
+ ['S1 aus','Alles aus, Selbsthaltungen zurückgesetzt.',()=>flags.off]
+];
+function changed(k){
+  if(k==='P1'&&s.P1) flags.p1=1;
+  if(k==='P1'&&!s.P1&&flags.p1) flags.off=1;
+  if(k==='Q1'&&s.Q1) flags.q1seen=1;
+  if(k==='Q1'&&!s.Q1&&flags.q1seen&&!s.S3) flags.q1off=1;
+  if(k==='B13'&&s.B13&&flags.q1seen) flags.wound=1;
+  if(k==='M2'&&s.M2) flags.m2=1;
+  if(k==='Q2'&&s.Q2) flags.q2=1;
+  if(k==='Q2'&&!s.Q2&&!s.B13) flags.q2done=1;
+  if(k==='B10'&&s.B10&&flags.q2done) flags.cycle=1;
+  if(k==='MSt'&&s.MSt) flags.fault=1;
 }
+
+/* =========================================================
+   8. Tutorial
+   ========================================================= */
+const TUT=[
+ {t:'Worum geht es?',view:'gesamt',html:`<p>Eine <b>Haspel</b> wickelt ein Blechband auf. Ist sie voll, öffnet sich eine <b>Klappe</b>, die Haspel dreht rückwärts und das Band fällt in einen <b>Container</b>.</p>
+  <p>In der Prüfung baust du dafür den Schaltschrank mit SPS und Bedienteil. Die echte Maschine gibt es nicht, sie wird durch die <b>Prozess-Simulationsplatine</b> ersetzt. Am Ende zeigst du dem Prüfungsausschuss in der <b>Funktionskontrolle</b>, dass alles genau nach der Funktionsbeschreibung läuft.</p>
+  <p>Genau diese Funktionskontrolle übst du hier, Schritt für Schritt.</p>`},
+ {t:'Das Bedienteil',view:'pult',mark:'S1',html:`<p>Damit bedienst du die Anlage. Es hängt an der Klemmleiste <code>-X3</code>.</p>
+  <ul><li><b>S1</b> Schalter Anlage EIN/AUS (%I2.0)</li><li><b>S2</b> Störung quittieren (%I2.1)</li><li><b>S3</b> Motor Rechtslauf tippen (%I2.2)</li><li><b>S4</b> Vorgang starten (%I3.0)</li><li><b>P1</b> weiß: Anlage EIN · <b>P2</b> rot: Störung</li></ul>
+  <p>Unter dem 3D-Bild findest du dieselben Taster noch einmal groß. Beides funktioniert.</p>`},
+ {t:'Die Maschine',view:'haspel',mark:'B13',html:`<ul><li><b>M1</b> Motor der Haspel, Rechtslauf über Schütz Q1, Linkslauf über Q2</li><li><b>M2</b> Ventil, öffnet die Klappe</li><li><b>B13</b> Sensor: Blechband auf der Haspel</li><li><b>B10</b> Sensor: Klappe geschlossen · <b>B11</b>: Klappe offen</li></ul>
+  <p>Alle Sensoren sind Schließer: 1 heißt „betätigt“. Die grüne LED am Sensor zeigt, ob er gerade 1 meldet.</p>`},
+ {t:'Der Schaltschrank',view:'schrank',mark:'K1',html:`<p>Auf der Montageplatte (600 × 600 mm) sitzen:</p>
+  <ul><li><b>F3</b> Motorschutzschalter, eingestellt auf 3,25 A</li><li><b>Q1/Q2</b> Wendeschütze, gegenseitig verriegelt</li><li><b>K1</b> die SPS. Ihre LEDs zeigen jeden Ein- und Ausgang</li><li>unten die <b>Prozess-Simulationsplatine</b> mit P10 (Linkslauf), P11 (Rechtslauf), P12 (Ventil M2)</li></ul>
+  <p>Tipp jedes Teil an, um zu sehen, was es macht.</p>`},
+ {t:'Grundstellung prüfen',view:'haspel',mark:'B10',check:()=>s.B10&&!s.B13&&!s.S1,html:`<p>Laut Funktionsbeschreibung ist in der Grundstellung „die Haspel leer und die Klappe geschlossen“.</p>`,
+   task:'Schau nach: B10 meldet 1 (Klappe zu), B13 meldet 0 (Haspel leer), S1 ist aus.',
+   explain:`Das ist der Startpunkt jeder Funktionskontrolle. Mit <b>↺</b> oben rechts kommst du jederzeit hierher zurück.`},
+ {t:'Anlage einschalten',view:'pult',mark:'S1',check:()=>s.P1,ctl:['S1'],demo:async()=>{press('S1',1);},
+   html:`<p>„Mit dem Schalter -S1 wird die Anlage ein- bzw. ausgeschaltet. Wird die Anlage eingeschaltet, leuchtet die Meldeleuchte -P1.“</p>`,
+   task:'Schalte S1 ein.',
+   explain:`<b class="nwt">NW1</b> <code>P1 = S1</code>. Das Programm benutzt P1 ab jetzt in allen anderen Netzwerken als Freigabe. Ohne P1 läuft nichts.`},
+ {t:'Band aufwickeln (Tippbetrieb)',view:'haspel',mark:'S3',check:()=>flags.wound&&!s.S3,ctl:['S3'],demo:async()=>{hold('S3',2000);},
+   html:`<p>„Mit dem Taster -S3 kann bei geschlossener Klappe der Motor -M1 im Tippbetrieb, im Rechtslauf eingeschaltet werden. Sobald sich Material auf der Haspel befindet, ist der Sensor -B13 betätigt.“</p>`,
+   task:'Halte S3 etwa 2 Sekunden gedrückt und lass dann los.',
+   explain:`<b class="nwt">NW4</b> <code>Q1 = P1 ∧ ¬Störung ∧ S3 ∧ B10 ∧ ¬M2 ∧ ¬Q2</code>. Eine reine Zuweisung, kein SR: Lässt du S3 los, fällt Q1 sofort ab. Das ist Tippbetrieb. P11 leuchtet über den Hilfskontakt von Q1, und B13 meldet jetzt Material.`},
+ {t:'Klappe öffnen',view:'haspel',mark:'S4',check:()=>flags.m2,ctl:['S4'],demo:async()=>{hold('S4',300);},
+   html:`<p>„Befindet sich Material auf der Haspel und wird der Taster -S4 betätigt, wird das Ventil -M2 angesteuert und die Klappe zum Container öffnet sich.“</p>`,
+   task:'Drück S4 kurz.',
+   explain:`<b class="nwt">NW3</b> SR-Baustein. Setzen: <code>P1 ∧ ¬Störung ∧ B13 ∧ B10 ∧ S4 ∧ ¬Q1</code>. M2 bleibt gespeichert, obwohl du S4 losgelassen hast. P12 leuchtet, die Klappe geht auf, und B10 fällt auf 0.`},
+ {t:'Verriegelung testen',view:'haspel',mark:'S3',check:()=>flags.s3blocked,optional:true,ctl:['S3'],demo:async()=>{hold('S3',400);},
+   html:`<p>Der Prüfer will sehen, dass der Motor nicht aufwickeln kann, solange die Klappe offen ist.</p>`,
+   task:'Drück S3, solange die Klappe offen ist.',
+   explain:`Q1 bleibt aus. Im Log steht der Grund: <code>B10 = 0</code>, <code>M2 = 1</code> und später <code>Q2 = 1</code> sperren NW4. Zusätzlich verriegeln sich Q1 und Q2 in der Hardware über ihre Öffner 21/22.`},
+ {t:'Abhaspeln',view:'haspel',mark:'B11',check:()=>flags.q2,
+   html:`<p>„Wird der Sensor -B11 betätigt, wird der Motor -M1 im Linkslauf eingeschaltet.“</p>`,
+   task:'Nichts tun, nur zuschauen: Sobald die Klappe ganz offen ist, meldet B11.',
+   explain:`<b class="nwt">NW5</b> SR-Baustein „Merker Q2“. Setzen: <code>P1 ∧ ¬Störung ∧ M2 ∧ B11</code>. Q2 zieht an, P10 leuchtet, das Band wickelt sich ab und fällt in den Container.`},
+ {t:'Haspel leer, zurück in Grundstellung',view:'haspel',mark:'B13',check:()=>flags.cycle,
+   html:`<p>„Meldet der Sensor -B13, dass kein Material auf der Haspel ist, werden der Motor -M1 und das Ventil -M2 abgeschaltet. Dadurch schließt die Klappe.“</p>`,
+   task:'Warte, bis B13 auf 0 geht und die Klappe wieder zu ist (B10 = 1).',
+   explain:`<b class="nwt">NW3</b> und <b class="nwt">NW5</b> haben beide <code>¬B13</code> am Rücksetzeingang R1. M2 und Q2 fallen ab, die Klappe schließt, B10 meldet wieder 1. Die Haspel kann neu befüllt werden.`},
+ {t:'Störung auslösen',view:'schrank',mark:'F3',check:()=>flags.fault,ctl:['F3'],demo:async()=>{press('F3',0);},
+   html:`<p>„Löst die Motorschutzeinrichtung aus, werden der Motor und das Ventil abgeschaltet und die Meldeleuchte -P2 leuchtet.“</p><p>Im Test aus der Musterlösung passiert das, während Q2 läuft. Du kannst vorher noch einmal aufwickeln und S4 drücken, musst aber nicht.</p>`,
+   task:'Löse F3 aus (im Schaltschrank antippen oder unten auf F3).',
+   explain:`<b class="nwt">NW2</b> SR „Störung“. Setzen: <code>¬F3</code>. Danach ist <code>P2 = Störung ∧ P1</code>. Der Störmerker steht in NW3 und NW5 am Rücksetzeingang und in NW4 negiert: Alles geht aus.`},
+ {t:'Zu früh quittieren',view:'pult',mark:'S2',check:()=>flags.ackEarly,optional:true,ctl:['S2'],demo:async()=>{hold('S2',300);},
+   html:`<p>Ein klassischer Prüfungstest: Was passiert, wenn man quittiert, obwohl der Motorschutz noch ausgelöst ist?</p>`,
+   task:'Drück S2, ohne F3 wieder einzuschalten.',
+   explain:`P2 bleibt an. Rücksetzen geht nur mit <code>S2 ∧ F3</code>, und F3 ist 0. Außerdem ist der Setzeingang ¬F3 noch aktiv.`},
+ {t:'Richtig quittieren',view:'schrank',mark:'F3',check:()=>flags.acked,ctl:['F3','S2'],demo:async()=>{press('F3',1); await sleep(600); hold('S2',300);},
+   html:`<p>„Nach dem Einschalten des Motorschutzschalters kann die Störung mithilfe des Tasters -S2 quittiert werden und die Meldeleuchte -P2 erlischt.“</p>`,
+   task:'Schalte F3 wieder ein und drück dann S2.',
+   explain:`<b class="nwt">NW2</b> R1 = <code>S2 ∧ F3</code> ist erfüllt, der Störmerker geht auf 0, P2 erlischt. Ein Ablauf startet nicht von selbst weiter, dafür braucht es wieder S4.`},
+ {t:'Anlage ausschalten',view:'pult',mark:'S1',check:()=>flags.off,ctl:['S1'],demo:async()=>{press('S1',0);},
+   html:`<p>„Ist die Anlage ausgeschaltet, ist kein Aktor aktiv.“</p>`,
+   task:'Schalte S1 aus. Probier danach ruhig S3 oder S4: Nichts passiert.',
+   explain:`<b class="nwt">NW1</b> P1 = 0. In NW3 und NW5 steht <code>¬P1</code> am Rücksetzeingang, in NW4 ist P1 eine UND-Bedingung. Alle Selbsthaltungen werden zurückgesetzt.`},
+ {t:'Geschafft',view:'gesamt',html:`<p>Du hast die komplette Funktionskontrolle aus der Funktionsbeschreibung durchgespielt. Im Tab <b>Funktionstest</b> siehst du alle Punkte abgehakt, im Tab <b>Was die IHK verlangt</b> stehen der Prüfungsablauf und typische Fragen aus dem Fachgespräch.</p>
+  <p>Jetzt kannst du frei üben. Stell dir am besten selbst Aufgaben, zum Beispiel: „Was passiert, wenn ich während des Abhaspelns S1 ausschalte?“ Im Log siehst du sofort, welches Netzwerk reagiert.</p>`}
+];
+let tut={on:true,i:0,done:{},busy:false};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function hold(k,ms){ press(k,1); setTimeout(()=>press(k,0),ms); }
+function tutGo(i){
+  tut.i=Math.max(0,Math.min(TUT.length-1,i)); const st=TUT[tut.i];
+  if(st.view) flyTo(st.view);
+  log('tut',`Schritt ${tut.i+1}/${TUT.length}: ${st.t}`,st.task||null);
+  renderTut();
+}
+function renderTut(){
+  const el=$('tut');
+  if(!tut.on){
+    el.innerHTML=`<div class="tut-top"><span class="n">Freies Üben</span></div><h2>Probier alles selbst aus</h2>
+     <p>Jede Aktion landet im Log mit dem Netzwerk, das reagiert hat. Tipp Bauteile im 3D-Modell an, um sie erklärt zu bekommen.</p>
+     <div class="tut-btns"><button type="button" class="primary" id="tStart">Tutorial von vorn</button></div>`;
+    $('tStart').onclick=startTut; return;
+  }
+  const st=TUT[tut.i], n=TUT.length;
+  const ok = st.check ? !!(tut.done[tut.i] || st.check()) : true;
+  if(st.check && ok && !tut.done[tut.i]){ tut.done[tut.i]=1; log('tut',`Erledigt: ${st.t}`,null); }
+  el.innerHTML=`<div class="tut-top"><span class="n">Tutorial · Schritt ${tut.i+1} von ${n}</span><button class="tbtn" type="button" id="tEnd">Beenden</button></div>
+   <div class="prog"><i style="width:${((tut.i+1)/n*100).toFixed(0)}%"></i></div>
+   <h2>${st.t}</h2>${st.html||''}
+   ${st.task?`<div class="task ${ok?'done':''}"><span class="ic">${ok?'✓':'!'}</span><div><b>${st.task}</b><small>${ok?'Erledigt.':'Warte auf deine Eingabe …'}</small>${st.ctl&&!ok?`<div class="tctl">${st.ctl.map(k=>`<button type="button" data-tctl="${k}">${ctlLabel(k)}</button>`).join('')}</div>`:''}</div></div>`:''}
+   ${ok&&st.explain?`<div class="explain">${st.explain}</div>`:''}
+   <div class="tut-btns"><button type="button" id="tBack" ${tut.i===0?'disabled':''}>Zurück</button>
+    ${st.demo&&!ok?`<button type="button" id="tDemo">Vorführen</button>`:''}
+    <span class="grow"></span>
+    ${tut.i<n-1?`<button type="button" class="primary" id="tNext" ${!ok&&!st.optional?'disabled':''}>${!ok&&st.optional?'Überspringen':'Weiter'}</button>`:`<button type="button" class="primary" id="tFree">Frei üben</button>`}</div>`;
+  $('tEnd').onclick=endTut; $('tBack').onclick=()=>tutGo(tut.i-1);
+  if($('tNext')) $('tNext').onclick=()=>tutGo(tut.i+1);
+  if($('tFree')) $('tFree').onclick=endTut;
+  el.querySelectorAll('[data-tctl]').forEach(b=>{ const k=b.dataset.tctl; if(HOLD.includes(k)) holdButton(b,k); else b.onclick=()=>{ press(k,!s[k]); }; });
+  if($('tDemo')) $('tDemo').onclick=async()=>{ if(tut.busy) return; tut.busy=true; log('tut','Vorführung: '+st.task,null); await st.demo(); tut.busy=false; };
+}
+let tutSig='';
+function ctlLabel(k){ if(k==='S1') return s.S1?'S1 ausschalten':'S1 einschalten'; if(k==='F3') return s.F3?'F3 auslösen':'F3 einschalten'; return k+' (gedrückt halten)'; }
+function tutTick(){ if(!tut.on) return; const st=TUT[tut.i]; const sg=tut.i+':'+(st.check?(st.check()?1:0):1)+':'+(tut.done[tut.i]?1:0)+':'+s.S1+s.F3; if(sg!==tutSig){ tutSig=sg; renderTut(); } }
+function startTut(){ reset(false); tut={on:true,i:0,done:{},busy:false}; tutSig=''; tutGo(0); }
+function endTut(){ tut.on=false; log('tut','Tutorial beendet, freies Üben',null); renderTut(); }
+
+/* =========================================================
+   9. 2D-Oberfläche
+   ========================================================= */
+const uiHeld=new Set();
+const releaseAll=()=>{ uiHeld.forEach(k=>{ if(s[k]) press(k,0); }); uiHeld.clear(); document.querySelectorAll('.pressed').forEach(e=>e.classList.remove('pressed')); };
+addEventListener('pointerup',releaseAll); addEventListener('pointercancel',releaseAll); addEventListener('blur',releaseAll);
 function holdButton(el,k){
-  const down=e=>{e.preventDefault(); try{el.setPointerCapture(e.pointerId)}catch(_){} el.classList.add('pressed'); press(k,1);};
-  const up=()=>{ if(!s[k]) return; el.classList.remove('pressed'); press(k,0); };
+  const down=e=>{ e.preventDefault(); try{el.setPointerCapture(e.pointerId)}catch(_){} el.classList.add('pressed'); uiHeld.add(k); press(k,1); };
+  const up=()=>{ el.classList.remove('pressed'); if(s[k]) press(k,0); };
   el.addEventListener('pointerdown',down); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up);
-  el.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault(); el.classList.add('pressed'); press(k,1);} });
-  el.addEventListener('keyup',e=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault(); el.classList.remove('pressed'); press(k,0);} });
+  el.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&!e.repeat){ e.preventDefault(); el.classList.add('pressed'); press(k,1);} });
+  el.addEventListener('keyup',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); up(); } });
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
-function build(){
-  const op=$('opGrid');
-  const s1=card('S1',`<button class="sel" type="button" id="sw-S1" aria-label="S1 umschalten"></button><span class="sel-l"><span>0</span><span>I</span></span>`);
-  op.append(s1); $('sw-S1').addEventListener('click',()=>press('S1',!s.S1));
-  [['S2','QUITT.',''],['S3','TIPP ↻','green'],['S4','START','blue']].forEach(([k,l,c])=>{
-    const d=card(k,`<button class="pb ${c}" type="button" id="pb-${k}" aria-label="${C[k].bmk} gedrückt halten">${l}</button>`); op.append(d); holdButton($('pb-'+k),k);
-  });
-  op.append(card('P1',`<button class="lamp white" type="button" data-info="P1" id="lamp-P1" aria-label="P1 Info"></button>`));
-  op.append(card('P2',`<button class="lamp red" type="button" data-info="P2" id="lamp-P2" aria-label="P2 Info"></button>`));
-
-  const pcb=$('pcbGrid');
-  ['B10','B11','B13'].forEach(k=>{ pcb.append(card(k,`<button class="slide" type="button" id="sl-${k}" aria-label="${k} umschalten"></button>`));
-    $('sl-'+k).addEventListener('click',()=>{ if(auto){ openInfo(k); return;} press(k,!s[k],'man'); }); });
-  ['P10','P11','P12'].forEach(k=>pcb.append(card(k,`<button class="led" type="button" data-info="${k}" id="led-${k}" aria-label="${k} Info"></button>`)));
-
-  const pow=$('powGrid');
-  pow.append(card('F3',`<button class="breaker" type="button" id="br-F3">EIN</button><button class="trip-btn" type="button" id="trip">Auslösen</button>`));
-  $('br-F3').addEventListener('click',()=>press('F3',!s.F3)); $('trip').addEventListener('click',()=>press('F3',0));
-  pow.append(card('Q1',`<button class="cont" type="button" data-info="Q1" id="ct-Q1">A1 A2</button>`));
-  pow.append(card('Q2',`<button class="cont" type="button" data-info="Q2" id="ct-Q2">A1 A2</button>`));
-  pow.append(card('M1',`<button class="motor" type="button" data-info="M1" id="mot"><span class="rot"></span>M</button>`));
-  pow.append(card('MSt',`<span class="mini" style="min-height:58px;display:grid;place-items:center">Speicher im DB1</span>`));
-  pow.append(card('MQ2',`<span class="mini" style="min-height:58px;display:grid;place-items:center">Speicher im DB1</span>`));
+const IND=[['P1','white','Anlage EIN'],['P2','red','Störung'],['P11','','Rechtslauf'],['P10','','Linkslauf'],['P12','','Ventil M2']];
+function buildUI(){
+  $('c-S1').onclick=()=>press('S1',!s.S1);
+  HOLD.forEach(k=>holdButton($('c-'+k),k));
+  $('c-F3').onclick=()=>press('F3',!s.F3);
+  $('inds').innerHTML=IND.map(([k,c,l])=>`<button type="button" class="ind ${c}" data-info="${k}" id="i-${k}"><i></i><b>${k}</b><span>${l}</span></button>`).join('')+
+    `<button type="button" class="ind" data-info="M1" id="i-M1"><b>M1</b><span id="m1txt">steht</span></button>`;
+  $('mansw').innerHTML=['B10','B11','B13'].map(k=>`<button type="button" id="m-${k}">${k}</button>`).join('');
+  ['B10','B11','B13'].forEach(k=>$('m-'+k).onclick=()=>press(k,!s[k],'man'));
+  $('modeAuto').onclick=()=>{ if(!auto) setMode(true); }; $('modeMan').onclick=()=>{ if(auto) setMode(false); };
 
   const nl=$('nwList');
   NW.forEach(n=>{
     const d=document.createElement('div'); d.className='nw'; d.id='nw'+n.id;
     const grp=(lbl,g,key)=>`<div class="row"><span class="k">${lbl}</span>${g.t.map((t,i)=>(i?`<span class="op">${g.op==='and'?'∧':'∨'}</span>`:'')+`<button type="button" class="chip" data-info="${t.n}" data-nw="${n.id}" data-i="${key}${i}">${tl(t)}</button>`).join('')}</div>`;
     let h=`<div class="nw-h"><span class="tag">NW${n.id}</span><b>${n.title}</b></div><div class="nw-c">${n.comment}</div>`;
-    if (n.kind==='assign') h+=grp('UND',n.g,'a')+`<div class="row"><span class="k">=</span><button type="button" class="res" data-info="${n.target}" id="res-${n.target}">${short(n.target)}</button></div>`;
-    else { h+=grp('S (Setzen)',n.set,'s')+grp('R1 (Rücks.)',n.reset,'r')+`<div class="row"><span class="k">SR · Q</span><button type="button" class="res" data-info="${n.mem}" id="res-${n.mem}">${n.mem==='M2'?'M2':C[n.mem].bmk}</button></div>`;
-      if (n.out) h+=grp('UND',n.out.g,'o')+`<div class="row"><span class="k">=</span><button type="button" class="res" data-info="${n.out.target}" id="res-${n.out.target}">${short(n.out.target)}</button></div>`; }
+    if(n.kind==='assign') h+=grp('UND',n.g,'a')+`<div class="row"><span class="k">=</span><button type="button" class="res" data-info="${n.target}">${short(n.target)}</button></div>`;
+    else{ h+=grp('S setzen',n.set,'s')+grp('R1 rücks.',n.reset,'r')+`<div class="row"><span class="k">SR → Q</span><button type="button" class="res" data-info="${n.mem}">${n.mem==='M2'?'M2':C[n.mem].bmk}</button></div>`;
+      if(n.out) h+=grp('UND',n.out.g,'o')+`<div class="row"><span class="k">=</span><button type="button" class="res" data-info="${n.out.target}">${short(n.out.target)}</button></div>`; }
     d.innerHTML=h; nl.append(d);
   });
+
+  const ZL=[['%I2.0','S1'],['%I2.1','S2'],['%I2.2','S3'],['%I2.3','F3'],['%I2.4','B10'],['%I2.5','B11'],['%I2.6','B13'],['%I3.0','S4'],['%Q2.0','Q1'],['%Q2.1','Q2'],['%Q2.3','M2'],['%Q2.5','P1'],['%Q2.6','P2']];
+  $('tab-zl').innerHTML=`<p class="sub">Zuordnungsliste wie im TIA-Programm. Alle Geber sind Schließer. Zeile antippen für Details.</p><div class="tblw"><table><thead><tr><th>Operand</th><th>BMK</th><th>Kommentar</th><th>Zustand</th></tr></thead><tbody>`+
+    ZL.map(([a,k])=>`<tr class="click" data-info="${k}"><td class="mono">${a}</td><td class="mono">${C[k].bmk}</td><td>${C[k].name}</td><td><span class="v" data-zl="${k}"></span></td></tr>`).join('')+
+    `</tbody></table></div><p class="sub" style="margin-top:10px">P10 und P11 hängen an den Hilfskontakten 13/14 von Q2 und Q1, P12 parallel zu %Q2.3. Statische Variablen im DB1: „Merker Störung Motor“, „Merker Q2 M1 Linkslauf“.</p>`;
+
+  $('steps').innerHTML=CHECK.map((x,i)=>`<li id="ck${i}"><div><b>${x[0]}</b><small>${x[1]}</small></div></li>`).join('');
+
+  $('tab-ihk').innerHTML=`
+   <h3>Ablauf der praktischen Prüfung</h3>
+   <ol><li><b>Vorbereitung im Betrieb</b> (Vorgabezeit 8 h): Schaltschrank auf einer Montageplatte 600 × 600 mm aufbauen, Bedienteil über <code>-X3</code>, SPS über <code>-X4</code>, Prozess-Simulationsplatine über <code>-X10</code>, Steuerspannung über <code>-X2</code>, alle Dreh- und Wechselstromanschlüsse an <code>-X1</code>. Netzanschluss mit 16-A-CEE-Stecker, 5-polig. Hauptstromkreise vollständig bis <code>-X1</code> verdrahten.</li>
+   <li><b>Programm</b> erstellen und Dokumentation ergänzen (Stromlaufpläne, Zuordnungsliste, Programmausdruck).</li>
+   <li><b>Inbetriebnahme</b>: Prüfung nach DIN VDE 0100-600 und Funktionskontrolle, dokumentiert im Prüfprotokoll.</li>
+   <li><b>Prüfungstag</b> im Prüfungsbetrieb (6 h): funktionierende Anlage und Platine plus Schnellhefter mitbringen. Dort kommen ein <b>Änderungsauftrag</b> und das <b>Fachgespräch</b>.</li></ol>
+   <h3>Prüfung nach DIN VDE 0100-600</h3>
+   <div class="tblw"><table><thead><tr><th>Schritt</th><th>Sollwert (Musterlösung)</th></tr></thead><tbody>
+    <tr><td>Besichtigen</td><td>keine Mängel, F3 auf 3,25 A eingestellt</td></tr>
+    <tr><td>Durchgängigkeit Schutzleiter</td><td>Richtwert ≤ 0,3 Ω (bzw. ≤ 1 Ω), Messstrom ≥ 200 mA</td></tr>
+    <tr><td>Isolationswiderstand</td><td>≥ 1 MΩ bei 500 V DC, SPS und Netzteil vorher abklemmen</td></tr>
+    <tr><td>RCD an der Steckdose</td><td>U<sub>B</sub> ≤ 50 V, t ≤ 300 ms</td></tr>
+    <tr><td>Drehfeld</td><td>Rechtsdrehfeld bei Q1</td></tr>
+    <tr><td>Erprobung</td><td>Funktionstest komplett erfüllt (siehe Tab Funktionstest)</td></tr></tbody></table></div>
+   <h3>Typische Fragen im Fachgespräch</h3>
+   <details><summary>Warum Verriegelung in Software und Hardware?</summary><p>Bei einem SPS-Fehler oder verschweißtem Kontakt könnten Q1 und Q2 gleichzeitig anziehen. Das wäre ein Kurzschluss zwischen zwei Außenleitern. Die Öffner 21/22 im Spulenkreis verhindern das sicher.</p></details>
+   <details><summary>Wie wird die Drehrichtung umgekehrt?</summary><p>Durch Tausch zweier Außenleiter (hier L1 und L3) im Schütz Q2.</p></details>
+   <details><summary>Warum meldet F3 mit 1 = OK?</summary><p>Drahtbruchsicher: Reißt die Leitung, kommt 0 an, und das wird genauso wie eine Störung behandelt.</p></details>
+   <details><summary>Warum ein rücksetzdominantes SR-Flipflop?</summary><p>Liegen Setzen und Rücksetzen gleichzeitig an, gewinnt der sichere Zustand (aus). Quittieren geht außerdem nur bei F3 = 1.</p></details>
+   <details><summary>Was bedeutet Tippbetrieb?</summary><p>Der Motor läuft nur, solange der Taster gedrückt ist. Keine Selbsthaltung, im Programm eine einfache Zuweisung statt SR.</p></details>
+   <details><summary>Warum hängen P10/P11 an Hilfskontakten statt an der SPS?</summary><p>Sie zeigen den tatsächlichen Zustand des Schützes (Rückmeldung) und nicht nur den Befehl der SPS.</p></details>
+   <details><summary>Warum die SPS beim Isolationsmessen abklemmen?</summary><p>Die 500-V-Prüfspannung kann Elektronik zerstören und verfälscht das Messergebnis.</p></details>
+   <details><summary>Warum 3,25 A an F3?</summary><p>Das ist der Bemessungsstrom des Motors laut Leistungsschild bei Dreieck 400 V.</p></details>
+   <p class="sub">Quelle: Aufgabenheft W26 3090 B1/B2 und die Musterlösung im Projekt (inoffiziell).</p>`;
+
+  document.querySelectorAll('.tabs [data-tab]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tabs [data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+    ['fb1','zl','ck','ihk'].forEach(t=>$('tab-'+t).hidden=(t!==b.dataset.tab));
+  });
   document.addEventListener('click',e=>{ const b=e.target.closest('[data-info]'); if(b) openInfo(b.dataset.info); });
-  $('proc').addEventListener('click',e=>{ const g=e.target.closest('[data-comp]'); if(g) openInfo(g.dataset.comp); });
+  document.querySelectorAll('.log-f button').forEach(b=>b.onclick=()=>{ filter=b.dataset.f; document.querySelectorAll('.log-f button').forEach(x=>x.setAttribute('aria-pressed',x===b)); rerenderLog(); });
+  $('logClear').onclick=()=>{ LOG.length=0; rerenderLog(); logCnt.textContent='0 Einträge'; };
+  $('logCopy').onclick=()=>{
+    const txt=LOG.slice().reverse().map(e=>`${e.t}\t${e.nw?'NW'+e.nw:badgeTxt[e.kind]}\t${e.text}${e.why?'\t'+e.why:''}`).join('\n');
+    try{ navigator.clipboard.writeText(txt).then(()=>{ $('logCopy').textContent='Kopiert'; setTimeout(()=>$('logCopy').textContent='Kopieren',1500); },()=>{ $('logCopy').textContent='Nicht möglich'; }); }catch(_){ $('logCopy').textContent='Nicht möglich'; }
+  };
+  $('resetBtn').onclick=()=>reset(false);
+  $('tutBtn').onclick=startTut;
+  $('sheetBg').onclick=closeInfo;
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeInfo(); });
 }
-
-/* ---------- Funktionsprüfung ---------- */
-const STEPS = [
- ['S1 einschalten','P1 leuchtet (NW1).',()=>flags.p1],
- ['S3 tippen, bis Material auf der Haspel ist','Q1 zieht nur bei gedrücktem S3 an, P11 leuchtet, danach meldet B13.',()=>flags.wound],
- ['S4 drücken','M2 wird gesetzt (NW3), P12 leuchtet, Klappe öffnet, B10 fällt ab.',()=>flags.m2],
- ['Klappe offen, B11 meldet','Q2 Linkslauf startet von selbst (NW5), P10 leuchtet.',()=>flags.q2],
- ['Haspel leer, B13 = 0','Q2 und M2 fallen ab, Klappe schließt, B10 meldet wieder.',()=>flags.cycle],
- ['S3 bei offener Klappe drücken','Verriegelung: Q1 bleibt aus, weil B10 = 0.',()=>flags.s3blocked],
- ['F3 auslösen','Störung: P2 leuchtet, M2/Q1/Q2 aus (NW2).',()=>flags.fault],
- ['F3 wieder einschalten, dann S2','Störung quittiert, P2 erlischt.',()=>flags.acked]
-];
-function buildSteps(){ $('steps').innerHTML = STEPS.map((x,i)=>`<li id="st${i}"><div><b>${x[0]}</b><small>${x[1]}</small></div></li>`).join(''); }
-function changed(k){
-  if (k==='P1' && s.P1) flags.p1=1;
-  if (k==='B13' && s.B13 && flags.q1seen) flags.wound=1;
-  if (k==='Q1' && s.Q1) flags.q1seen=1;
-  if (k==='M2' && s.M2) flags.m2=1;
-  if (k==='Q2' && s.Q2) flags.q2=1;
-  if (k==='Q2' && !s.Q2 && !s.B13) flags.q2done=1;
-  if (k==='B10' && s.B10 && flags.q2done) flags.cycle=1;
-  if (k==='MSt' && s.MSt) flags.fault=1;
-  const el=document.getElementById('res-'+k); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+function setMode(a){
+  auto=a; $('modeAuto').setAttribute('aria-pressed',a); $('modeMan').setAttribute('aria-pressed',!a); $('mansw').hidden=a;
+  log('sys',a?'Sensoren: automatisch (folgen dem 3D-Modell)':'Sensoren: von Hand, wie die Schiebeschalter auf der Prüfungsplatine',null); render();
 }
-
-/* ---------- Darstellung ---------- */
-const STATE = () => {
-  if (!s.S1) return ['off','Anlage aus'];
-  if (s.MSt) return ['fault', s.F3?'Störung, quittieren mit S2':'Störung: F3 ausgelöst'];
-  if (s.Q2) return ['run','Linkslauf: Abhaspeln'];
-  if (s.Q1) return ['run','Rechtslauf: Aufwickeln'];
-  if (s.M2 && !s.B11) return ['run','Klappe öffnet'];
-  if (s.M2) return ['run','Klappe offen'];
-  if (!s.B10) return ['ready','Klappe schließt'];
-  if (s.B13) return ['ready','Haspel voll, bereit für S4'];
-  return ['ready','Bereit, Haspel leer'];
-};
-let lastSheetKey=null;
-function render(){
-  const [st,txt]=STATE(); $('status').dataset.s=st; $('statusText').textContent=txt;
-  document.querySelectorAll('[data-val]').forEach(el=>{ const k=el.dataset.val; const v=val(k); el.textContent=valText(k); el.classList.toggle('t',!!v); });
-  $('sw-S1').classList.toggle('on',!!s.S1); $('sw-S1').setAttribute('aria-pressed',s.S1?'true':'false');
-  $('lamp-P1').classList.toggle('lit',!!s.P1); $('lamp-P2').classList.toggle('lit',!!s.P2);
-  ['B10','B11','B13'].forEach(k=>{ const e=$('sl-'+k); e.classList.toggle('on',!!s[k]); e.setAttribute('aria-pressed',s[k]?'true':'false'); });
-  $('led-P10').classList.toggle('lit',!!(s.Q2&&!s.Q1)); $('led-P11').classList.toggle('lit',!!(s.Q1&&!s.Q2)); $('led-P12').classList.toggle('lit',!!s.M2);
-  const br=$('br-F3'); br.textContent=s.F3?'EIN':'AUSGELÖST'; br.classList.toggle('on',!!s.F3); br.classList.toggle('trip',!s.F3); $('trip').hidden=!s.F3;
-  $('ct-Q1').classList.toggle('on',!!s.Q1); $('ct-Q2').classList.toggle('on',!!s.Q2);
-  const run=s.F3&&(s.Q1^s.Q2); const m=$('mot'); m.classList.toggle('run',!!run); m.classList.toggle('cw',!!(run&&s.Q1)); m.classList.toggle('ccw',!!(run&&s.Q2));
-  document.querySelectorAll('.chip').forEach(ch=>{ const n=NW[ch.dataset.nw-1], key=ch.dataset.i, grp={a:n.g,s:n.set,r:n.reset,o:n.out&&n.out.g}[key[0]]; ch.classList.toggle('t',tv(grp.t[+key.slice(1)])); });
-  document.querySelectorAll('.res').forEach(r=>r.classList.toggle('t',!!s[r.dataset.info]));
-  let done=0; STEPS.forEach((x,i)=>{ const ok=!!x[2](); if(ok)done++; $('st'+i).classList.toggle('done',ok); }); $('stepCount').textContent=done+'/'+STEPS.length;
-  if (lastSheetKey) updSheetState();
-}
-function val(k){ if(k==='M1') return s.F3&&(s.Q1^s.Q2); if(k==='P10') return s.Q2&&!s.Q1; if(k==='P11') return s.Q1&&!s.Q2; if(k==='P12') return s.M2; return s[k]; }
+const val=k=>{ if(k==='M1') return s.F3&&(s.Q1^s.Q2); if(k==='P10') return s.Q2&&!s.Q1; if(k==='P11') return s.Q1&&!s.Q2; if(k==='P12') return s.M2; if(k==='K1') return 1; if(k==='PCB') return 0; return s[k]; };
 function valText(k){
-  if (k==='M1'){ const r=val('M1'); return r?(s.Q1?'Rechtslauf':'Linkslauf'):(s.F3?'steht':'steht, F3 aus'); }
+  if(k==='M1'){ return val('M1')?(s.Q1?'dreht rechts (aufwickeln)':'dreht links (abwickeln)'):(s.F3?'steht':'steht, F3 ausgelöst'); }
+  if(k==='K1') return 'RUN';
+  if(k==='PCB') return `B10=${s.B10} B11=${s.B11} B13=${s.B13} · P10=${val('P10')?1:0} P11=${val('P11')?1:0} P12=${s.M2}`;
   const v=val(k)?1:0; return v+' · '+C[k].v[v];
 }
-function drawProc(){
-  const r = 12 + 38*phys.mat;
-  $('coil').setAttribute('r', r.toFixed(1));
-  $('spokes').setAttribute('transform',`rotate(${(phys.ang%360).toFixed(1)} 120 95)`);
-  $('flap').setAttribute('transform',`rotate(${(phys.flap*72).toFixed(1)} 85 171)`);
-  const run=s.F3&&(s.Q1^s.Q2);
-  $('feed').setAttribute('opacity', run&&s.Q1 ? 1 : 0); $('feed').setAttribute('y2',(95-r).toFixed(1));
-  const drop=$('drop'); drop.setAttribute('opacity', run&&s.Q2&&phys.flap>.6 ? 1 : 0); drop.setAttribute('y1',(95+r).toFixed(1)); drop.setAttribute('stroke-dashoffset',String(-(Date.now()/20)%11));
-  const bh = 30*phys.bin; $('bin').setAttribute('y',(246-bh).toFixed(1)); $('bin').setAttribute('height',bh.toFixed(1));
-  $('motorBox').setAttribute('stroke', run?'var(--on)':'var(--steel-dark)');
-  $('motorDir').textContent = run ? (s.Q1?'↻ rechts':'↺ links') : 'steht';
-  $('valve').setAttribute('fill', s.M2?'var(--on)':'var(--panel)');
-  [['svgB10','B10'],['svgB11','B11'],['svgB13','B13']].forEach(([id,k])=>$(id).setAttribute('fill', s[k]?'var(--on)':'var(--off-dark)'));
+const STATE=()=>{
+  if(!s.S1) return ['off','Anlage aus'];
+  if(s.MSt) return ['fault',s.F3?'Störung: mit S2 quittieren':'Störung: F3 ausgelöst'];
+  if(s.Q2) return ['run','Abhaspeln (Linkslauf)'];
+  if(s.Q1) return ['run','Aufwickeln (Rechtslauf)'];
+  if(s.M2&&!s.B11) return ['run','Klappe öffnet'];
+  if(s.M2) return ['run','Klappe offen'];
+  if(!s.B10) return ['ready','Klappe schließt'];
+  if(s.B13) return ['ready','Haspel voll, S4 drücken'];
+  return ['ready','Bereit, Haspel leer'];
+};
+function render(){
+  const [st,txt]=STATE(); $('status').dataset.s=st; $('statusText').textContent=txt;
+  $('c-S1').classList.toggle('on',!!s.S1); $('c-S1').setAttribute('aria-pressed',s.S1?'true':'false');
+  const f=$('c-F3'); f.textContent=s.F3?'EIN':'AUS­GELÖST'; f.classList.toggle('on',!!s.F3); f.classList.toggle('trip',!s.F3);
+  HOLD.forEach(k=>$('c-'+k).classList.toggle('pressed',!!s[k]));
+  IND.forEach(([k])=>$('i-'+k).classList.toggle('lit',!!val(k)));
+  $('m1txt').textContent=val('M1')?(s.Q1?'↻ rechts':'↺ links'):'steht';
+  ['B10','B11','B13'].forEach(k=>{ const b=$('m-'+k); b.classList.toggle('t',!!s[k]); b.textContent=`${k} = ${s[k]}`; });
+  document.querySelectorAll('.chip').forEach(ch=>{ const n=NW[ch.dataset.nw-1], key=ch.dataset.i, g={a:n.g,s:n.set,r:n.reset,o:n.out&&n.out.g}[key[0]]; ch.classList.toggle('t',tv(g.t[+key.slice(1)])); });
+  document.querySelectorAll('.res').forEach(r=>r.classList.toggle('t',!!s[r.dataset.info]));
+  document.querySelectorAll('[data-zl]').forEach(e=>{ const k=e.dataset.zl; e.textContent=s[k]?'1':'0'; e.classList.toggle('t',!!s[k]); });
+  let done=0; CHECK.forEach((x,i)=>{ const ok=!!x[2](); if(ok) done++; $('ck'+i).classList.toggle('done',ok); }); $('ckCnt').textContent=done+'/'+CHECK.length;
+  if(sheetKey) updSheet();
+  tutTick();
 }
 
 /* ---------- Info-Blatt ---------- */
+let sheetKey=null;
 function openInfo(k){
-  if (!C[k]) return; lastSheetKey=k; const c=C[k];
-  const isInput = ['S1','S2','S3','S4','F3','B10','B11','B13'].includes(k);
+  if(!C[k]) return; sheetKey=k; const c=C[k]; selectMark(k);
   let acts='';
-  if (k==='S1') acts=`<button class="primary" type="button" data-act="toggle">S1 ${s.S1?'ausschalten':'einschalten'}</button>`;
-  else if (['S2','S3','S4'].includes(k)) acts=`<button class="primary" type="button" id="sheetHold">${c.bmk} gedrückt halten</button>`;
-  else if (k==='F3') acts=`<button class="primary" type="button" data-act="toggle">${s.F3?'F3 auslösen':'F3 wieder einschalten'}</button>`;
-  else if (['B10','B11','B13'].includes(k)) acts = auto ? `<button type="button" data-act="manual">Auf „Von Hand“ umschalten</button>` : `<button class="primary" type="button" data-act="toggle">${short(k)} auf ${s[k]?0:1} schalten</button>`;
-  const hist = LOG.filter(e=>e.text.startsWith(short(k)+' ')||e.text.startsWith(c.bmk+' ')).slice(0,5);
-  $('sheet').innerHTML = `<button class="close" type="button" id="sheetClose">Schließen</button>
+  if(k==='S1') acts=`<button class="primary" type="button" data-act="toggle">S1 ${s.S1?'ausschalten':'einschalten'}</button>`;
+  else if(HOLD.includes(k)) acts=`<button class="primary" type="button" id="sheetHold">${c.bmk} gedrückt halten</button>`;
+  else if(k==='F3') acts=`<button class="primary" type="button" data-act="toggle">${s.F3?'F3 auslösen':'F3 wieder einschalten'}</button>`;
+  else if(['B10','B11','B13'].includes(k)) acts = auto?`<button type="button" data-act="manual">Sensoren von Hand schalten</button>`:`<button class="primary" type="button" data-act="toggle">${k} auf ${s[k]?0:1}</button>`;
+  else if(k==='PCB') acts = auto?`<button type="button" data-act="manual">Sensoren von Hand schalten</button>`:'';
+  const hist=LOG.filter(e=>e.text.startsWith(short(k)+' ')||e.text.startsWith(c.bmk+' ')).slice(0,5);
+  $('sheet').innerHTML=`<button class="close" type="button" id="sheetClose">Schließen</button>
    <h3 id="sheetTitle">${c.bmk}</h3><div>${c.name}</div>
    <div class="meta"><span>${c.typ}</span><span>${c.addr}</span><span>${c.kontakt}</span></div>
-   <dl><dt>Zustand jetzt</dt><dd><span class="val mono" id="sheetVal"></span></dd>
-   <dt>Netzwerke</dt><dd>${c.nws.map(n=>`<a href="#nw${n}" data-jump="${n}">NW${n}</a>`).join(', ')}</dd></dl>
-   <p>${c.desc}</p>
-   ${acts?`<div class="acts">${acts}</div>`:''}
+   <dl><dt>Zustand jetzt</dt><dd><span class="val" id="sheetVal"></span></dd><dt>Im Programm</dt><dd>${c.nws.map(n=>`<a href="#nw${n}" data-jump="${n}">NW${n}</a>`).join(', ')}</dd></dl>
+   <p>${c.desc}</p>${acts?`<div class="acts">${acts}</div>`:''}
    ${hist.length?`<h4 style="margin:14px 0 4px;font-family:var(--f-display);letter-spacing:.05em">LETZTE ÄNDERUNGEN</h4><ul class="hist">${hist.map(e=>`<li><span class="mono">${e.t}</span> ${e.text}</li>`).join('')}</ul>`:''}`;
-  $('sheet').hidden=false; $('sheetBg').hidden=false; updSheetState();
-  $('sheetClose').onclick=closeInfo; $('sheetClose').focus({preventScroll:true});
-  const hb=$('sheetHold'); if (hb) holdButton(hb,k);
-  $('sheet').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{
-    if (b.dataset.act==='manual') setMode(false);
-    else press(k,!s[k], ['B10','B11','B13'].includes(k)?'man':undefined);
-    openInfo(k);
-  });
-  $('sheet').querySelectorAll('[data-jump]').forEach(a=>a.onclick=e=>{ e.preventDefault(); closeInfo(); const t=$('nw'+a.dataset.jump); t.scrollIntoView({behavior:'smooth',block:'center'}); t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); });
+  $('sheet').hidden=false; $('sheetBg').hidden=false; updSheet();
+  $('sheetClose').onclick=closeInfo;
+  const hb=$('sheetHold'); if(hb) holdButton(hb,k);
+  $('sheet').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ if(b.dataset.act==='manual') setMode(false); else press(k,!s[k],['B10','B11','B13'].includes(k)?'man':undefined); openInfo(k); });
+  $('sheet').querySelectorAll('[data-jump]').forEach(a=>a.onclick=e=>{ e.preventDefault(); closeInfo(); document.querySelector('[data-tab="fb1"]').click(); const t=$('nw'+a.dataset.jump); t.scrollIntoView({behavior:'smooth',block:'center'}); t.classList.remove('hot'); void t.offsetWidth; t.classList.add('hot'); });
 }
-function updSheetState(){ const el=$('sheetVal'); if(!el) return; el.textContent=valText(lastSheetKey); el.classList.toggle('t',!!val(lastSheetKey)); }
-function closeInfo(){ lastSheetKey=null; $('sheet').hidden=true; $('sheetBg').hidden=true; }
-$('sheetBg').addEventListener('click',closeInfo);
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeInfo(); });
+function updSheet(){ const el=$('sheetVal'); if(!el) return; el.textContent=valText(sheetKey); el.classList.toggle('t',!!val(sheetKey)); }
+function closeInfo(){ sheetKey=null; $('sheet').hidden=true; $('sheetBg').hidden=true; selectMark(null); }
 
-/* ---------- Modus, Reset, Log-Bedienung ---------- */
-function setMode(a){
-  auto=a; $('modeAuto').setAttribute('aria-pressed',a); $('modeMan').setAttribute('aria-pressed',!a);
-  $('modeHint').textContent = a ? 'Automatisch: Die Sensoren folgen dem Prozessbild. „Von Hand“ entspricht den Schiebeschaltern auf der Prüfungsplatine.'
-                                : 'Von Hand: Du schaltest B10, B11 und B13 selbst, wie auf der Prüfungsplatine. Das Prozessbild bewegt sich weiter, beeinflusst die Sensoren aber nicht.';
-  log('sys', a ? 'Sensoren: automatisch' : 'Sensoren: von Hand (Schiebeschalter)', null);
-}
-$('modeAuto').onclick=()=>{ if(!auto) setMode(true); };
-$('modeMan').onclick=()=>{ if(auto) setMode(false); };
 function reset(first){
   Object.assign(s,{S1:0,S2:0,S3:0,S4:0,F3:1,B10:1,B11:0,B13:0,P1:0,P2:0,M2:0,Q1:0,Q2:0,MSt:0,MQ2:0});
-  Object.assign(phys,{flap:0,mat:0,bin:0,ang:0}); for (const k in flags) delete flags[k];
-  document.querySelectorAll('.pb.pressed').forEach(b=>b.classList.remove('pressed'));
-  log('sys', first ? 'Simulator gestartet. Grundstellung: Haspel leer, Klappe geschlossen (B10 = 1), F3 eingeschaltet, S1 aus.' : 'Grundstellung hergestellt. Alle Merker und Ausgänge 0, Haspel leer, Klappe zu.', 'Nächster Schritt: S1 einschalten.');
+  Object.assign(phys,{flap:0,mat:0,bin:0,ang:0}); for(const k in flags) delete flags[k];
+  log('sys',first?'Simulator gestartet. Grundstellung: Haspel leer, Klappe zu (B10 = 1), F3 ein, S1 aus.':'Grundstellung hergestellt: alle Ausgänge und Merker 0, Haspel leer, Klappe zu.',null);
   render();
 }
-$('resetBtn').onclick=()=>reset(false);
-document.querySelectorAll('.log-f button').forEach(b=>b.onclick=()=>{ filter=b.dataset.f; document.querySelectorAll('.log-f button').forEach(x=>x.setAttribute('aria-pressed',x===b)); rerenderLog(); });
-$('logClear').onclick=()=>{ LOG.length=0; rerenderLog(); logCnt.textContent='0 Einträge'; };
-$('logCopy').onclick=()=>{
-  const txt=LOG.slice().reverse().map(e=>`${e.t}\t${e.nw?'NW'+e.nw:badgeTxt[e.kind]}\t${e.text}${e.why?'\t'+e.why:''}`).join('\n');
-  const done=()=>{ $('logCopy').textContent='Kopiert'; setTimeout(()=>$('logCopy').textContent='Kopieren',1500); };
-  try { navigator.clipboard.writeText(txt).then(done,()=>{ $('logCopy').textContent='Nicht möglich'; }); } catch(_){ $('logCopy').textContent='Nicht möglich'; }
-};
-$('logToggle').onclick=()=>{ const m=$('log').classList.toggle('min'); $('logToggle').textContent=m?'Ausklappen':'Einklappen'; $('logToggle').setAttribute('aria-expanded',!m); };
 
-/* ---------- Start ---------- */
-build(); buildSteps(); reset(true);
-let last=performance.now(), acc=0;
-function loop(now){
-  const dt=Math.min(0.1,(now-last)/1000); last=now; acc+=dt;
-  physics(dt);
-  if (acc>=0.05){ acc=0; scan(); render(); }
-  drawProc();
-  requestAnimationFrame(loop);
+/* =========================================================
+   10. 3D-Modell (three.js)
+   ========================================================= */
+const V={ok:false,obj:{},pick:[],labels:[]};
+const VIEWS={
+  gesamt:{t:[0,1.25,0],d:[0.12,0.42,1],r:4.7},
+  pult:{t:[-3.3,1.2,0.3],d:[0.05,0.75,1],r:0.95},
+  haspel:{t:[0.1,1.35,0],d:[0.75,0.3,1],r:1.55},
+  schrank:{t:[3.3,1.5,0],d:[0.05,0.08,1],r:1.0}
+};
+function init3D(){
+  if(!window.THREE||!THREE.OrbitControls){ $('stage').insertAdjacentHTML('beforeend','<div class="nogl">Das 3D-Modell konnte nicht geladen werden (keine Verbindung zum CDN). Die Bedienung unten funktioniert trotzdem.</div>'); return; }
+  const canvas=$('cv');
+  let renderer; try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true}); }catch(e){ $('stage').insertAdjacentHTML('beforeend','<div class="nogl">WebGL ist auf diesem Gerät nicht verfügbar.</div>'); return; }
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const scene=new THREE.Scene(); const cam=new THREE.PerspectiveCamera(38,1,0.05,80);
+  Object.assign(V,{ok:true,renderer,scene,cam,canvas});
+
+  // Eigene Zeiger-Logik VOR den OrbitControls registrieren, damit Taster das Drehen blockieren
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); let down=null;
+  const pick=e=>{ const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,cam);
+    const h=ray.intersectObjects(V.pick,true)[0]; if(!h) return null; let o=h.object; while(o&&!o.userData.comp) o=o.parent; return o?o.userData.comp:null; };
+  canvas.addEventListener('pointerdown',e=>{ const c=pick(e); down={x:e.clientX,y:e.clientY,c,held:false};
+    if(c&&HOLD.includes(c)){ V.controls.enabled=false; down.held=true; press(c,1); } });
+  const up=e=>{ if(!down) return; const d=down; down=null;
+    if(d.held){ press(d.c,0); V.controls.enabled=true; return; }
+    if(e.type==='pointerup'&&d.c&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<8){ if(d.c==='S1') press('S1',!s.S1); openInfo(d.c); } };
+  window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
+  canvas.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&!down) canvas.style.cursor=pick(e)?'pointer':'grab'; });
+
+  const controls=new THREE.OrbitControls(cam,canvas); V.controls=controls;
+  controls.enableDamping=true; controls.dampingFactor=0.08; controls.minDistance=1.2; controls.maxDistance=24; controls.maxPolarAngle=Math.PI*0.495;
+  controls.addEventListener('start',()=>{ V.fly=null; });
+
+  scene.add(new THREE.HemisphereLight(0xffffff,0x6d746e,0.5));
+  const dl=new THREE.DirectionalLight(0xffffff,0.7); dl.position.set(4,9,7); dl.castShadow=true; dl.shadow.mapSize.set(2048,2048);
+  Object.assign(dl.shadow.camera,{left:-7,right:7,top:6,bottom:-3,near:1,far:30}); dl.shadow.bias=-0.0005; scene.add(dl);
+  const fill=new THREE.DirectionalLight(0xffffff,0.25); fill.position.set(-6,4,-4); scene.add(fill);
+
+  const M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.62,metalness:.08},o||{}));
+  const mat={grey:M(0xb9bfba),dark:M(0x2b3034),steel:M(0x9aa6ae,{metalness:.55,roughness:.35}),steelD:M(0x5d6870,{metalness:.5,roughness:.4}),
+    panel:M(0xd9dbd4),blue:M(0x2f5c8a),bez:M(0xa9b0b4,{metalness:.6,roughness:.3}),floor:M(0x7f8781,{roughness:.95}),yellow:M(0xe0a21a),pcb:M(0x1f6b42),rail:M(0xc7ccd0,{metalness:.7,roughness:.3})};
+  const add=(g,m,p,x,y,z)=>{ const o=new THREE.Mesh(g,m); o.position.set(x||0,y||0,z||0); o.castShadow=true; o.receiveShadow=true; (p||scene).add(o); return o; };
+  const box=(w,h,d,m,p,x,y,z)=>add(new THREE.BoxGeometry(w,h,d),m,p,x,y,z);
+  const cyl=(r,h,m,p,x,y,z,seg)=>add(new THREE.CylinderGeometry(r,r,h,seg||28),m,p,x,y,z);
+  const tag=(o,k)=>{ o.userData.comp=k; V.pick.push(o); V.obj[k]=V.obj[k]||o; return o; };
+
+  // Boden
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(14,7),mat.floor); fl.rotation.x=-Math.PI/2; fl.receiveShadow=true; scene.add(fl);
+
+  // ---- Bedienteil ----
+  const pult=new THREE.Group(); pult.position.set(-3.3,0,0.3); scene.add(pult);
+  box(1.3,0.95,0.7,mat.grey,pult,0,0.475,0);
+  const face=new THREE.Group(); face.position.set(0,1.2,0.0); face.rotation.x=0.62; pult.add(face);
+  box(1.45,0.07,0.95,mat.panel,face,0,0,0);
+  const mkBtn=(k,color,x,z)=>{ const g=new THREE.Group(); g.position.set(x,0.035,z); face.add(g); cyl(0.12,0.035,mat.bez,g,0,0.017,0);
+    const cap=cyl(0.088,0.06,M(color,{roughness:.4}),g,0,0.05,0); V.obj[k+'cap']=cap; tag(g,k); return g; };
+  const mkLamp=(k,color,x,z)=>{ const g=new THREE.Group(); g.position.set(x,0.035,z); face.add(g); cyl(0.12,0.035,mat.bez,g,0,0.017,0);
+    const lm=M(color,{roughness:.3,transparent:true,opacity:.92}); const dome=add(new THREE.SphereGeometry(0.085,24,12,0,Math.PI*2,0,Math.PI/2),lm,g,0,0.035,0); V.obj[k+'lamp']=lm; tag(g,k); return g; };
+  mkLamp('P1',0xf4eed2,-0.42,-0.2); mkLamp('P2',0xc23a30,0,-0.2);
+  { const g=new THREE.Group(); g.position.set(0.42,0.035,-0.2); face.add(g); cyl(0.12,0.035,mat.bez,g,0,0.017,0); cyl(0.09,0.05,mat.dark,g,0,0.05,0);
+    const knob=box(0.045,0.06,0.18,M(0xdfe3e5),g,0,0.09,0); V.obj.S1knob=knob; tag(g,'S1'); }
+  mkBtn('S2',0x24282b,-0.42,0.2); mkBtn('S3',0x26a84a,0,0.2); mkBtn('S4',0x2563b0,0.42,0.2);
+
+  // ---- Maschine ----
+  const mach=new THREE.Group(); scene.add(mach);
+  [-0.75,0.75].forEach(x=>{ box(0.1,2.35,0.34,mat.yellow,mach,x,1.175,0); box(0.12,0.06,0.9,mat.yellow,mach,x,0.03,0); });
+  box(1.6,0.08,0.1,mat.yellow,mach,0,2.3,-0.12);
+  const drum=new THREE.Group(); drum.position.set(0,1.95,0); mach.add(drum); V.drum=drum;
+  const core=cyl(0.11,1.3,mat.steelD,drum); core.rotation.z=Math.PI/2;
+  [-0.62,0.62].forEach(x=>{ for(let i=0;i<3;i++){ const b=box(0.035,1.25,0.06,mat.steelD,drum,x,0,0); b.rotation.x=i*Math.PI/3; } const hub=cyl(0.09,0.06,mat.dark,drum,x,0,0); hub.rotation.z=Math.PI/2; });
+  const coilM=M(0xb7c2ca,{metalness:.6,roughness:.28}); const coil=cyl(1,1.08,coilM,mach,0,1.95,0,40); coil.rotation.z=Math.PI/2; V.coil=coil; tag(coil,'M1');
+  const shaft=cyl(0.04,0.55,mat.steel,mach,1.0,1.95,0); shaft.rotation.z=Math.PI/2;
+  const motor=new THREE.Group(); motor.position.set(1.42,1.95,0); mach.add(motor); tag(motor,'M1');
+  const mb=cyl(0.26,0.55,mat.blue,motor); mb.rotation.z=Math.PI/2;
+  for(let i=0;i<8;i++){ const r=box(0.5,0.03,0.03,mat.blue,motor,0,0,0); r.position.set(0,Math.cos(i*Math.PI/4)*0.27,Math.sin(i*Math.PI/4)*0.27); }
+  const fan=cyl(0.24,0.12,mat.dark,motor,0.33,0,0); fan.rotation.z=Math.PI/2;
+  box(0.2,0.12,0.2,mat.blue,motor,0,0.31,0);
+  const arrowM=M(0x22b24a,{emissive:0x22b24a,emissiveIntensity:.6}); const ring=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.02,8,40,Math.PI*1.4),arrowM); ring.rotation.y=Math.PI/2; ring.position.x=-0.33; motor.add(ring); V.ring=ring;
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.12,16),arrowM); ring.add(tip); V.tip=tip;
+  // Zuführung
+  const feed=box(1.0,0.012,3.2,mat.steel,scene,0,2.5,-1.6); V.feed=feed;
+  // Klappe
+  const hinge=new THREE.Group(); hinge.position.set(0,1.22,-0.55); mach.add(hinge); V.hinge=hinge;
+  const flap=box(1.2,0.05,0.95,M(0x6e7a82,{metalness:.4}),hinge,0,0,0.475); tag(flap,'M2');
+  cyl(0.035,1.3,mat.steelD,hinge).rotation.z=Math.PI/2;
+  // Ventil M2
+  const valve=new THREE.Group(); valve.position.set(-0.9,1.22,-0.45); mach.add(valve); tag(valve,'M2');
+  box(0.14,0.2,0.2,mat.dark,valve,0,0,0); const coilV=box(0.12,0.14,0.14,M(0x333a40),valve,0,0.17,0);
+  V.valveLed=M(0x444b50,{emissive:0x000000}); add(new THREE.SphereGeometry(0.025,12,8),V.valveLed,valve,0.075,0.2,0);
+  // Sensoren
+  const mkSens=(k,x,y,z,rx,ry)=>{ const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.set(rx||0,ry||0,0); mach.add(g);
+    const b=cyl(0.04,0.24,mat.steel,g); b.rotation.x=Math.PI/2; const cap=cyl(0.042,0.03,M(0x2c6cc4),g,0,0,-0.13); cap.rotation.x=Math.PI/2;
+    const lm=M(0x3a4044,{emissive:0x000000}); add(new THREE.SphereGeometry(0.03,12,8),lm,g,0,0.045,0.1); V.obj[k+'led']=lm;
+    const beam=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.25,16,1,true),new THREE.MeshBasicMaterial({color:0x22b24a,transparent:true,opacity:.35,depthWrite:false})); beam.rotation.x=-Math.PI/2; beam.position.z=-0.25; g.add(beam); V.obj[k+'beam']=beam;
+    tag(g,k); return g; };
+  mkSens('B10',0.45,1.12,0.62,0,0);
+  mkSens('B11',0.45,0.48,0.12,0.6,0);
+  mkSens('B13',0.0,2.9,0.5,-0.85,0);
+  // Container
+  const cont=new THREE.Group(); cont.position.set(0,0,-0.35); mach.add(cont);
+  const cm=M(0x4d7a5a); box(1.3,0.04,1.5,cm,cont,0,0.02,0); box(1.3,0.38,0.04,cm,cont,0,0.19,0.73); box(1.3,0.38,0.04,cm,cont,0,0.19,-0.73); box(0.04,0.38,1.5,cm,cont,0.63,0.19,0); box(0.04,0.38,1.5,cm,cont,-0.63,0.19,0);
+  const fillB=box(1.2,1,1.4,M(0x9aa6ae,{metalness:.5,roughness:.5}),cont,0,0.04,0); V.fill=fillB;
+  // fallende Bandstücke
+  V.drops=[]; for(let i=0;i<6;i++){ const d=box(0.9,0.012,0.16,mat.steel,mach,0,1,-0.15); d.rotation.x=0.4; V.drops.push(d); }
+
+  // ---- Schaltschrank ----
+  const sch=new THREE.Group(); sch.position.set(3.3,0,0); scene.add(sch);
+  [-0.8,0.8].forEach(x=>box(0.06,2.5,0.06,mat.dark,sch,x,1.25,-0.08));
+  box(1.7,1.85,0.04,M(0xe6e7e1),sch,0,1.55,-0.02);
+  box(1.6,0.12,0.12,M(0x8e9590),sch,0,2.38,0.06); box(1.6,0.12,0.12,M(0x8e9590),sch,0,0.72,0.06);
+  [2.05,1.5,1.0].forEach(y=>box(1.5,0.035,0.02,mat.rail,sch,0,y,0.02));
+  // F3
+  const f3=new THREE.Group(); f3.position.set(-0.55,2.05,0.1); sch.add(f3); tag(f3,'F3');
+  box(0.2,0.32,0.14,M(0x8d9297),f3,0,0,0); const flag=box(0.08,0.05,0.01,M(0x22b24a,{emissive:0x22b24a,emissiveIntensity:.4}),f3,0,0.06,0.075); V.f3flag=flag;
+  const lever=new THREE.Group(); lever.position.set(0,-0.04,0.07); f3.add(lever); box(0.06,0.12,0.04,M(0x222222),lever,0,0.05,0.02); V.f3lever=lever;
+  // Q1 / Q2
+  const mkQ=(k,x)=>{ const g=new THREE.Group(); g.position.set(x,2.05,0.1); sch.add(g); tag(g,k); box(0.2,0.3,0.15,M(0x7c8288),g,0,0,0);
+    const pl=box(0.08,0.05,0.04,M(0xe0a21a),g,0,0.06,0.08); V.obj[k+'pl']=pl; const lm=M(0x3a4044,{emissive:0x000000}); add(new THREE.SphereGeometry(0.02,12,8),lm,g,0.06,-0.08,0.078); V.obj[k+'led']=lm; return g; };
+  mkQ('Q1',-0.2); mkQ('Q2',0.08);
+  // Klemmen
+  for(let i=0;i<22;i++) box(0.045,0.1,0.07,M(i%6===5?0x2f8f4e:0x6f7a85),sch,-0.52+i*0.05,1.0,0.06);
+  // SPS K1
+  const k1=new THREE.Group(); k1.position.set(0.25,1.5,0.1); sch.add(k1); tag(k1,'K1');
+  box(0.95,0.34,0.14,M(0x2b3034),k1,0,0,0);
+  const k1c=document.createElement('canvas'); k1c.width=512; k1c.height=176; const k1t=new THREE.CanvasTexture(k1c);
+  const k1f=new THREE.Mesh(new THREE.PlaneGeometry(0.93,0.32),new THREE.MeshBasicMaterial({map:k1t})); k1f.position.z=0.071; k1.add(k1f); V.k1={c:k1c,t:k1t,sig:''};
+  box(0.18,0.34,0.14,M(0x3b4045),sch,-0.38,1.5,0.1);
+  // Platine
+  const pcb=new THREE.Group(); pcb.position.set(0.05,1.0+0.24,0.1); sch.add(pcb); pcb.position.y=1.24; pcb.position.x=0.4; tag(pcb,'PCB');
+  box(0.62,0.26,0.03,mat.pcb,pcb,0,0,0);
+  const pc=document.createElement('canvas'); pc.width=384; pc.height=160; const pt=new THREE.CanvasTexture(pc);
+  const pf=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.25),new THREE.MeshBasicMaterial({map:pt})); pf.position.z=0.016; pcb.add(pf); V.pcb={c:pc,t:pt,sig:''};
+  pcb.position.set(0.4,1.18,0.1); k1.position.set(0.12,1.5,0.1);
+  // P10-P12 LEDs
+  [['P11',-0.2],['P10',-0.05],['P12',0.1]].forEach(([k,x])=>{ const g=new THREE.Group(); g.position.set(x,0.06,0.03); pcb.add(g); const lm=M(0x2d4a36,{emissive:0x000000}); add(new THREE.SphereGeometry(0.022,12,8),lm,g,0,0,0); V.obj[k+'led']=lm; tag(g,k); });
+
+  // Beschriftungen
+  const mkLabel=(txt,sub,pos)=>{ const c=document.createElement('canvas'); c.width=256; c.height=sub?112:72; const x=c.getContext('2d');
+    x.fillStyle='rgba(255,255,255,.93)'; rr(x,2,2,252,c.height-4,14); x.fill(); x.strokeStyle='rgba(30,40,35,.35)'; x.lineWidth=2; x.stroke();
+    x.fillStyle='#1b211f'; x.font='700 40px "Barlow Condensed", Arial Narrow, sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(txt,128,sub?38:37);
+    if(sub){ x.fillStyle='#55605a'; x.font='500 24px "IBM Plex Sans", sans-serif'; x.fillText(sub,128,82); }
+    const t=new THREE.CanvasTexture(c); const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
+    const h=(sub?0.13:0.085)*(V.lblScale||1); sp.scale.set(h*256/c.height,h,1); sp.position.copy(pos); sp.renderOrder=10; scene.add(sp); V.labels.push(sp); return sp; };
+  const W=(o,dx,dy,dz)=>{ const v=new THREE.Vector3(); o.updateWorldMatrix(true,false); o.getWorldPosition(v); v.x+=dx||0; v.y+=dy||0; v.z+=dz||0; return v; };
+  scene.updateMatrixWorld(true);
+  mkLabel('Bedienteil','-X3',new THREE.Vector3(-3.3,1.95,-0.25));
+  V.lblScale=0.8; [['S1','Anlage'],['P1','EIN'],['P2','Störung']].forEach(([k,sb])=>mkLabel(k,sb,W(V.obj[k],0,0.24,-0.04))); [['S2','Quitt.'],['S3','Tippen'],['S4','Start']].forEach(([k,sb])=>mkLabel(k,sb,W(V.obj[k],0,-0.16,0.2))); V.lblScale=1;
+  mkLabel('M1','Motor',W(motor,0.1,0.48,0)); mkLabel('M2','Ventil',W(valve,0,0.42,0)); mkLabel('Haspel',null,new THREE.Vector3(0,2.75,-0.2));
+  mkLabel('B13','Band da',W(V.obj.B13,0.3,0.15,0)); mkLabel('B10','zu',W(V.obj.B10,0.28,0.05,0)); mkLabel('B11','offen',W(V.obj.B11,0.28,0,0));
+  mkLabel('Container',null,new THREE.Vector3(0,0.55,0.55));
+  mkLabel('F3','Motorschutz',W(f3,0,0.3,0.05)); mkLabel('Q1','rechts',W(V.obj.Q1,0,0.3,0.05)); mkLabel('Q2','links',W(V.obj.Q2,0,0.3,0.05));
+  mkLabel('K1','SPS',W(k1,-0.62,0.0,0.05)); mkLabel('Platine','P10–P12',W(pcb,-0.48,-0.02,0.05)); mkLabel('Schaltschrank',null,new THREE.Vector3(3.3,2.65,0));
+
+  // Markierungspfeil
+  const mk=new THREE.Group(); const am=new THREE.MeshBasicMaterial({color:0xe0661b});
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.16,20),am); cone.rotation.x=Math.PI; mk.add(cone);
+  const rg=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.012,8,40),am); rg.rotation.x=Math.PI/2; rg.position.y=-0.2; mk.add(rg);
+  mk.visible=false; mk.renderOrder=11; cone.material.depthTest=false; scene.add(mk); V.marker=mk;
+
+  // Größe
+  const ro=new ResizeObserver(()=>resize3D()); ro.observe($('stage')); resize3D();
+  applyTheme3D(); try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme3D); }catch(_){}
+  new MutationObserver(applyTheme3D).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  setView('gesamt',true);
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>flyTo(b.dataset.view));
+  $('lblBtn').onclick=()=>{ const on=$('lblBtn').getAttribute('aria-pressed')!=='true'; $('lblBtn').setAttribute('aria-pressed',on); V.labels.forEach(l=>l.visible=on); };
 }
+function rr(x,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+function applyTheme3D(){ if(!V.ok) return; const c=getComputedStyle(document.documentElement).getPropertyValue('--scene').trim()||'#cfd5d0'; V.scene.background=new THREE.Color(c); }
+function resize3D(){ if(!V.ok) return; const r=$('stage').getBoundingClientRect(); V.renderer.setSize(r.width,r.height,false); V.cam.aspect=r.width/Math.max(1,r.height); V.cam.updateProjectionMatrix(); if(V.view) setView(V.view,true); }
+function viewPose(name){ const p=VIEWS[name]; const vf=V.cam.fov*Math.PI/180, hf=2*Math.atan(Math.tan(vf/2)*V.cam.aspect);
+  const dist=Math.max(p.r/Math.tan(hf/2),p.r*0.62/Math.tan(vf/2))*1.06; const d=new THREE.Vector3(...p.d).normalize(); const t=new THREE.Vector3(...p.t); return {t,pos:t.clone().add(d.multiplyScalar(dist))}; }
+function setView(name,instant){ if(!V.ok) return; V.view=name; const p=viewPose(name);
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===name));
+  if(instant){ V.cam.position.copy(p.pos); V.controls.target.copy(p.t); V.controls.update(); V.fly=null; }
+  else V.fly={t0:performance.now(),fp:V.cam.position.clone(),ft:V.controls.target.clone(),tp:p.pos,tt:p.t}; }
+function flyTo(name){ setView(name,false); }
+let markKey=null, selKey=null;
+function selectMark(k){ selKey=k; }
+
+function draw3D(now){
+  if(!V.ok) return;
+  if(V.fly){ const f=Math.min(1,(now-V.fly.t0)/900), e=f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2;
+    V.cam.position.lerpVectors(V.fly.fp,V.fly.tp,e); V.controls.target.lerpVectors(V.fly.ft,V.fly.tt,e); if(f>=1) V.fly=null; }
+  V.controls.update();
+  const run=s.F3&&(s.Q1^s.Q2);
+  V.drum.rotation.x=-phys.ang;
+  const r=0.13+0.5*phys.mat; V.coil.scale.set(r,1,r); V.coil.visible=phys.mat>0.005;
+  V.feed.visible=!!(run&&s.Q1); V.feed.position.y=1.95+r;
+  V.hinge.rotation.x=phys.flap*1.15;
+  V.fill.scale.y=Math.max(0.001,0.3*phys.bin); V.fill.position.y=0.04+0.15*phys.bin; V.fill.visible=phys.bin>0.01;
+  const dropOn=run&&s.Q2&&phys.flap>0.6, top=1.95-r, bot=0.12;
+  V.drops.forEach((d,i)=>{ d.visible=dropOn; if(dropOn){ const f=((phys.t*0.9+i/6)%1); d.position.y=top-f*(top-bot); d.position.z=-0.15-f*0.25; } });
+  V.ring.visible=!!run; if(run){ V.ring.rotation.x=(s.Q1?-1:1)*phys.t*3; V.tip.position.set(0.3,0,0); V.tip.rotation.z=s.Q1?Math.PI:0; }
+  const em=(m,on,col)=>{ m.emissive.setHex(on?col:0x000000); m.emissiveIntensity=on?1.2:0; };
+  em(V.obj.P1lamp,s.P1,0xfff1b0); em(V.obj.P2lamp,s.P2,0xff3a2a);
+  V.obj.S1knob.rotation.y=s.S1?-Math.PI/4:Math.PI/4;
+  ['S2','S3','S4'].forEach(k=>V.obj[k+'cap'].position.y=s[k]?0.025:0.05);
+  ['B10','B11','B13'].forEach(k=>{ em(V.obj[k+'led'],s[k],0x3ee86a); V.obj[k+'beam'].visible=!!s[k]; });
+  em(V.valveLed,s.M2,0x3ee86a);
+  V.f3lever.rotation.x=s.F3?0:1.1; V.f3flag.material.color.setHex(s.F3?0x22b24a:0xd9342b); V.f3flag.material.emissive.setHex(s.F3?0x22b24a:0xd9342b);
+  ['Q1','Q2'].forEach(k=>{ const on=s[k]&&!s[k==='Q1'?'Q2':'Q1']; V.obj[k+'pl'].position.z=on?0.06:0.08; em(V.obj[k+'led'],on,0x3ee86a); });
+  em(V.obj.P11led,s.Q1&&!s.Q2,0x3ee86a); em(V.obj.P10led,s.Q2&&!s.Q1,0x3ee86a); em(V.obj.P12led,s.M2,0x3ee86a);
+  drawK1(); drawPCB();
+  // Markierung
+  const mkey = tut.on && TUT[tut.i].mark ? TUT[tut.i].mark : selKey;
+  if(mkey&&V.obj[mkey]){ const p=new THREE.Vector3(); V.obj[mkey].getWorldPosition(p); V.marker.visible=true; V.marker.position.set(p.x,p.y+0.42+Math.sin(now/220)*0.04,p.z); V.marker.rotation.y=now/800; }
+  else V.marker.visible=false;
+  V.renderer.render(V.scene,V.cam);
+}
+function drawK1(){
+  const IO=[['I2.0','S1'],['I2.1','S2'],['I2.2','S3'],['I2.3','F3'],['I2.4','B10'],['I2.5','B11'],['I2.6','B13'],['I3.0','S4']];
+  const OO=[['Q2.0','Q1'],['Q2.1','Q2'],['Q2.3','M2'],['Q2.5','P1'],['Q2.6','P2']];
+  const sg=IO.concat(OO).map(x=>s[x[1]]).join(''); if(sg===V.k1.sig) return; V.k1.sig=sg;
+  const c=V.k1.c, x=c.getContext('2d'); x.fillStyle='#2f353a'; x.fillRect(0,0,512,176);
+  x.fillStyle='#dfe4e7'; x.font='700 22px "Barlow Condensed", Arial Narrow, sans-serif'; x.textBaseline='middle'; x.fillText('K1  SIMATIC S7-1200   RUN',14,20);
+  x.fillStyle='#3ee86a'; x.beginPath(); x.arc(250,20,6,0,7); x.fill();
+  const row=(arr,y,lab)=>{ x.fillStyle='#9aa5ab'; x.font='600 15px "IBM Plex Mono", monospace'; x.fillText(lab,14,y);
+    arr.forEach((a,i)=>{ const cx=70+i*54; x.fillStyle=s[a[1]]?'#3ee86a':'#4a5257'; x.beginPath(); x.arc(cx,y,9,0,7); x.fill();
+      x.fillStyle='#cfd6da'; x.font='500 13px "IBM Plex Mono", monospace'; x.textAlign='center'; x.fillText(a[0],cx,y+22); x.fillText(a[1],cx,y+38); x.textAlign='left'; }); };
+  row(IO,62,'DI'); row(OO,124,'DQ'); V.k1.t.needsUpdate=true;
+}
+function drawPCB(){
+  const sg=''+s.B10+s.B11+s.B13; if(sg===V.pcb.sig) return; V.pcb.sig=sg;
+  const c=V.pcb.c, x=c.getContext('2d'); x.fillStyle='#1f6b42'; x.fillRect(0,0,384,160);
+  x.fillStyle='#e6efe9'; x.font='600 16px "IBM Plex Mono", monospace'; x.textAlign='center';
+  [['P11',64],['P10',128],['P12',192]].forEach(([k,cx])=>x.fillText(k,cx+0,62));
+  [['B10',64],['B11',128],['B13',192]].forEach(([k,cx])=>{ x.fillStyle='#2a2f33'; x.fillRect(cx-22,96,44,22); x.fillStyle=s[k]?'#7fe39a':'#cfd4d7'; x.fillRect(s[k]?cx:cx-20,98,20,18); x.fillStyle='#e6efe9'; x.fillText(k,cx,140); });
+  x.textAlign='left'; x.font='600 14px "IBM Plex Sans", sans-serif'; x.fillText('Prozess-Simulation',230,30); x.fillText('-X10',230,52);
+  V.pcb.t.needsUpdate=true;
+}
+
+/* =========================================================
+   11. Start
+   ========================================================= */
+buildUI(); const hh=()=>document.documentElement.style.setProperty('--hh',document.querySelector('header.top').offsetHeight+'px'); hh(); addEventListener('resize',hh); init3D(); reset(true); tutGo(0);
+let last=performance.now(), acc=0;
+function loop(now){ const dt=Math.min(0.1,(now-last)/1000); last=now; acc+=dt; physics(dt); if(acc>=0.05){ acc=0; scan(); render(); } draw3D(now); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
-window.__sim={s,phys,press,LOG,flags,setMode};
+window.__sim={s,phys,press,LOG,flags,setMode,tut,TUT,V};
 })();
 </script>
 
